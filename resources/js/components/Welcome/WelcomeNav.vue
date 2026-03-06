@@ -1,20 +1,24 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { dashboard, login, register } from '@/routes';
+import { ref } from 'vue';
+import LoginModal from '@/components/LoginModal.vue';
+import { dashboard, register } from '@/routes';
 
 defineProps<{
     canRegister: boolean;
 }>();
 
 const page = usePage();
+const showLogin = ref(false);
 </script>
 
 <template>
     <header class="relative z-10 flex items-center justify-between px-8 py-6 lg:px-12 border-b border-white/5 backdrop-blur-md">
         <!-- Logo -->
         <div class="flex items-center gap-2.5">
-            <span class="text-2xl leading-none">⚡</span>
-            <span class="text-xl font-extrabold tracking-tight"
+            <img src="/logo/FastTrackLogo.png" alt="FastTrack Logo" class="h-8 w-auto" />
+            <span
+                class="text-xl font-extrabold tracking-tight"
                 style="background: linear-gradient(135deg, #63d478, #38e8a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"
             >
                 FastTrack
@@ -32,12 +36,15 @@ const page = usePage();
                 </Link>
             </template>
             <template v-else>
-                <Link
-                    :href="login()"
+                <!-- Opens login modal instead of navigating -->
+                <button
+                    type="button"
                     class="px-5 py-2 text-sm font-semibold rounded-lg border border-white/10 text-white/60 hover:bg-white/5 hover:text-white transition-all duration-200"
+                    @click="showLogin = true"
                 >
                     Log in
-                </Link>
+                </button>
+
                 <Link
                     v-if="canRegister"
                     :href="register()"
@@ -49,4 +56,7 @@ const page = usePage();
             </template>
         </nav>
     </header>
+
+    <!-- Login modal -->
+    <LoginModal :open="showLogin" @close="showLogin = false" />
 </template>

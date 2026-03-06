@@ -6,6 +6,7 @@ import WelcomeDashboardPreview from '@/components/Welcome/WelcomeDashboardPrevie
 import WelcomeHeroContent from '@/components/Welcome/WelcomeHeroContent.vue';
 import WelcomeNav from '@/components/Welcome/WelcomeNav.vue';
 
+
 withDefaults(
     defineProps<{
         canRegister: boolean;
@@ -27,16 +28,16 @@ withDefaults(
         class="relative min-h-screen flex flex-col overflow-hidden font-display text-[#e8eaf0]"
         style="background: #0b0f1a;"
     >
-        <!-- Animated background (grid + orbs) -->
         <WelcomeBackground />
 
-        <!-- Navigation -->
         <WelcomeNav :can-register="canRegister" />
 
-        <!-- Hero section -->
-        <main class="relative z-10 flex items-center gap-16 px-8 py-16 lg:px-12 lg:py-20  mx-auto w-full min-h-[calc(100vh-80px)] flex-col lg:flex-row">
-            <WelcomeHeroContent :can-register="canRegister" />
-            <WelcomeDashboardPreview />
+        <!-- Hero: single centered column on mobile, two columns on lg+ -->
+        <main class="relative  z-10 flex-1 flex items-center justify-center w-full px-6 py-12 lg:px-12 lg:py-0">
+            <div class="w-full p-10 max-w-6xl flex flex-col items-center gap-12 lg:flex-row lg:items-center lg:gap-16">
+                <WelcomeHeroContent :can-register="canRegister" />
+                <WelcomeDashboardPreview />
+            </div>
         </main>
     </div>
 </template>

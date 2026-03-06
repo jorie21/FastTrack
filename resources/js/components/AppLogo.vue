@@ -1,16 +1,15 @@
-<script setup lang="ts">
-import AppLogoIcon from '@/components/AppLogoIcon.vue';
-</script>
-
 <template>
-    <div
-        class="flex aspect-square size-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground"
-    >
-        <AppLogoIcon class="size-5 fill-current text-white dark:text-black" />
-    </div>
+    <img src="/logo/FastTrackLogo.png" alt="FastTrack Logo" class="h-8 w-auto" />
+
     <div class="ml-1 grid flex-1 text-left text-sm">
-        <span class="mb-0.5 truncate leading-tight font-semibold"
-            >Laravel Starter Kit</span
+        <span
+            class="mb-0.5 truncate leading-none font-display font-extrabold tracking-tight text-lg"
+            style="background: linear-gradient(135deg, #63d478, #38e8a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"
         >
+            FastTrack
+        </span>
+        <span class="truncate font-mono text-[10px] uppercase tracking-widest text-white/30">
+            Finance Tracker
+        </span>
     </div>
 </template>

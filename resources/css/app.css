@@ -2,6 +2,8 @@
 
 @import 'tw-animate-css';
 
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
@@ -155,13 +157,13 @@
     --sidebar-accent: hsl(0 0% 94%);
     --sidebar-accent-foreground: hsl(0 0% 30%);
     --sidebar-border: hsl(0 0% 91%);
-    --sidebar-ring: hsl(217.2 91.2% 59.8%);
+    --sidebar-ring: rgba(99,212,120,0.3);
     --sidebar: hsl(0 0% 98%);
 }
 
 .dark {
-    --background: hsl(0 0% 3.9%);
-    --foreground: hsl(0 0% 98%);
+    --background: #0b0f1a;
+    --foreground: #e8eaf0;
     --card: hsl(0 0% 3.9%);
     --card-foreground: hsl(0 0% 98%);
     --popover: hsl(0 0% 3.9%);
@@ -184,15 +186,15 @@
     --chart-3: hsl(30 80% 55%);
     --chart-4: hsl(280 65% 60%);
     --chart-5: hsl(340 75% 55%);
-    --sidebar-background: hsl(0 0% 7%);
-    --sidebar-foreground: hsl(0 0% 95.9%);
-    --sidebar-primary: hsl(360, 100%, 100%);
-    --sidebar-primary-foreground: hsl(0 0% 100%);
-    --sidebar-accent: hsl(0 0% 15.9%);
-    --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
-    --sidebar-border: hsl(0 0% 15.9%);
-    --sidebar-ring: hsl(217.2 91.2% 59.8%);
-    --sidebar: hsl(240 5.9% 10%);
+    --sidebar-background: #0d1117;
+    --sidebar-foreground: #e8eaf0;
+    --sidebar-primary: #63d478;
+    --sidebar-primary-foreground: #0b0f1a;
+    --sidebar-accent: rgba(99,212,120,0.08);
+    --sidebar-accent-foreground: #63d478;
+    --sidebar-border: rgba(255,255,255,0.06);
+    --sidebar-ring: rgba(99,212,120,0.3);
+    --sidebar: #0d1117;
 }
 
 @layer base {
