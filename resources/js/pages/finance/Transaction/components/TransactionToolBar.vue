@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Search, SlidersHorizontal, Plus, ChevronDown } from 'lucide-vue-next';
-import type { Category } from '../Types';
+import type { Category } from '../types';
 defineProps<{
     search: string;
     filterType: 'all' | 'income' | 'expense';

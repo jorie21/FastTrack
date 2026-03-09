@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Plus, Trash2 } from 'lucide-vue-next';
-import type { Category } from '../Types';
+import type { Category } from '../types';
 
 defineProps<{ categories: Category[] }>();
 const emit = defineEmits<{

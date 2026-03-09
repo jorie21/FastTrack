@@ -2,16 +2,18 @@
 import { Head } from '@inertiajs/vue3';
 import { ref, computed, watch } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
-import type { BreadcrumbItem } from '@/types';
-import type { Category, Transaction } from '../Transaction/Types';
 
-import AddCategoryModal      from '@/Transaction/AddCategoryModal.vue';
-import AddTransactionModal   from '@/Transaction/AddTransactionModal.vue';
-import CategoryList          from '@/Transaction/CategoryList.vue';
-import TransactionList       from '@/Transaction/TransactionList.vue';
-import TransactionPagination from '@/Transaction/TransactionPagination.vue';
-import TransactionTabs       from '@/Transaction/TransactionTabs.vue';
-import TransactionToolbar    from '@/Transaction/TransactionToolbar.vue';
+
+import type { BreadcrumbItem } from '@/types';
+import type { Category, Transaction } from '../Transaction/types';
+
+import AddCategoryModal from './components/AddCategoryModal.vue';
+import AddTransactionModal   from './components/AddTransactionModal.vue';
+import CategoryList          from './components/CategoryList.vue';
+import TransactionPagination from './components/TransactionaPagination.vue';
+import TransactionList       from './components/TransactionList.vue';
+import TransactionTabs       from './components/TransactionTabs.vue';
+import TransactionToolbar    from './components/TransactionToolBar.vue';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Transaction', href: 'transaction' },

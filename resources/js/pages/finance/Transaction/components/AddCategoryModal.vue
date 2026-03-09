@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { X, ChevronDown } from 'lucide-vue-next';
 import { ref } from 'vue';
-import type { Category } from '../Types';
+import type { Category } from '../types';
 
 defineProps<{ open: boolean }>();
 const emit = defineEmits<{

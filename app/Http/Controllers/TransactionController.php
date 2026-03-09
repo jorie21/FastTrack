@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\BudgetManagement\Controllers;
+namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Repositories\TransactionRepository;

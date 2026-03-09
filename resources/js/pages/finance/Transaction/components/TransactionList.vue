@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ArrowUpRight, ArrowDownLeft, Trash2 } from 'lucide-vue-next';
-import type { Transaction, Category } from '../Types';
+import type { Transaction, Category } from '../types';
 defineProps<{
     transactions: Transaction[];
     categories: Category[];

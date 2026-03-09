@@ -16,3 +16,9 @@ export interface Transaction {
     date: string;
     note?: string;
 }
+
+export interface TransactionPayload {
+    name: string,
+    amount: number,
+    category_id: number
+}

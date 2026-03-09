@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { X, ChevronDown } from 'lucide-vue-next';
 import { ref } from 'vue';
-import type { Category, Transaction } from '../Types';
+import type { Category, Transaction } from '../types';
 
 const props = defineProps<{
     open: boolean;
