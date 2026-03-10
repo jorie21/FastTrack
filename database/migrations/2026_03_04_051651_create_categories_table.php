@@ -16,7 +16,9 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('name', 255);
-            $table->enum('type', ['income', 'expense']);
+            $table->string('icon', 50)->nullable();
+            $table->string('color', 10)->nullable();
+            $table->enum('type', ['income', 'expense', 'both']);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();

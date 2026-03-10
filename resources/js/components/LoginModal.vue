@@ -17,6 +17,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
+import { Zap, Check } from 'lucide-vue-next';
 
 defineProps<{
     open: boolean;
@@ -37,8 +38,8 @@ const emit = defineEmits<{
             style="background: rgba(255,255,255,0.04); box-shadow: 0 0 0 1px rgba(99,212,120,0.08), 0 32px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);"
         >
             <!-- Logo -->
-            <div class="flex items-center justify-center gap-2.5 mb-6">
-                <span class="text-2xl leading-none">⚡</span>
+            <div class="flex items-center justify-center gap-2.5 mb-6 text-emerald-400">
+                <Zap class="h-6 w-6 fill-current" />
                 <span
                     class="text-xl font-extrabold tracking-tight"
                     style="background: linear-gradient(135deg, #63d478, #38e8a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"
@@ -61,7 +62,7 @@ const emit = defineEmits<{
                 v-if="status"
                 class="mb-5 flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-semibold text-emerald-400"
             >
-                <span>✓</span> {{ status }}
+                <Check class="h-4 w-4" /> {{ status }}
             </div>
 
             <!-- Form — all original backend logic preserved -->

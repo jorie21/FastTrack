@@ -1,30 +1,21 @@
 <script setup lang="ts">
-import { X, ChevronDown } from 'lucide-vue-next';
-import { ref } from 'vue';
-import type { Category } from '../types';
+import { X, ChevronDown, Lightbulb } from 'lucide-vue-next';
+import { useCategoryState } from '@/composables/useCategoryState';
+import DynamicIcon from '@/components/DynamicIcon.vue';
 
-defineProps<{ open: boolean }>();
-const emit = defineEmits<{
-    close: [];
-    submit: [cat: Omit<Category, 'id'>];
-}>();
+const { form, submit, updateCategory, open, closeModal, isEditing } = useCategoryState();
 
 const colorOptions = [
     '#63d478','#38e8a0','#f87171','#fb923c',
     '#60b4ff','#c084fc','#f472b6','#facc15','#34d399','#e879f9',
 ];
 
-const form = ref({
-    name: '',
-    icon: '📦',
-    color: '#63d478',
-    type: 'expense' as Category['type'],
-});
-
-function submit() {
-    if (!form.value.name) return;
-    emit('submit', { ...form.value });
-    form.value = { name: '', icon: '📦', color: '#63d478', type: 'expense' };
+async function handleSave() {
+    if (isEditing.value) {
+        await updateCategory();
+    } else {
+        await submit();
+    }
 }
 </script>
 
@@ -35,7 +26,7 @@ function submit() {
                 v-if="open"
                 class="fixed inset-0 z-50 flex items-center justify-center px-4"
                 style="background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);"
-                @click.self="emit('close')"
+                @click.self="closeModal()"
             >
                 <div
                     class="w-full max-w-sm rounded-2xl border border-white/10 p-7 font-display"
@@ -44,10 +35,14 @@ function submit() {
                     <!-- Header -->
                     <div class="mb-6 flex items-center justify-between">
                         <div>
-                            <h2 class="text-lg font-extrabold tracking-tight text-white">Add Category</h2>
-                            <p class="mt-0.5 font-mono text-xs text-white/35">Create a custom category</p>
+                            <h2 class="text-lg font-extrabold tracking-tight text-white">
+                                {{ isEditing ? 'Edit' : 'Add' }} Category
+                            </h2>
+                            <p class="mt-0.5 font-mono text-xs text-white/35">
+                                {{ isEditing ? 'Update existing' : 'Create a custom' }} category
+                            </p>
                         </div>
-                        <button @click="emit('close')" class="rounded-lg p-2 text-white/30 transition-all duration-200 hover:bg-white/5 hover:text-white/70">
+                        <button @click="closeModal()" class="rounded-lg p-2 text-white/30 transition-all duration-200 hover:bg-white/5 hover:text-white/70">
                             <X class="h-4 w-4" />
                         </button>
                     </div>
@@ -63,9 +58,12 @@ function submit() {
                         <!-- Icon + Type -->
                         <div class="grid grid-cols-2 gap-3">
                             <div class="flex flex-col gap-1.5">
-                                <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">Icon</label>
-                                <input v-model="form.icon" type="text" placeholder="💡"
-                                    class="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm transition-all duration-200 focus:border-emerald-500/50 focus:outline-none" />
+                                <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">Icon Name</label>
+                                <div class="relative">
+                                    <input v-model="form.icon" type="text" placeholder="e.g. Heart"
+                                        class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm transition-all duration-200 focus:border-emerald-500/50 focus:outline-none" />
+                                    <DynamicIcon :name="form.icon" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                                </div>
                             </div>
                             <div class="flex flex-col gap-1.5">
                                 <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">Type</label>
@@ -97,7 +95,7 @@ function submit() {
                         <!-- Preview -->
                         <div class="flex items-center gap-3 rounded-xl border border-white/8 px-4 py-3" style="background: rgba(255,255,255,0.03);">
                             <div class="flex h-9 w-9 items-center justify-center rounded-xl text-lg" :style="{ background: form.color + '18' }">
-                                {{ form.icon }}
+                                <DynamicIcon :name="form.icon" class="w-5 h-5" :style="{ color: form.color }" />
                             </div>
                             <div>
                                 <p class="text-sm font-semibold text-white/80">{{ form.name || 'Category name' }}</p>
@@ -109,11 +107,11 @@ function submit() {
 
                     <!-- Actions -->
                     <div class="mt-6 flex gap-3">
-                        <button @click="emit('close')"
+                        <button @click="closeModal()"
                             class="flex-1 rounded-xl border border-white/10 py-3 text-sm font-semibold text-white/50 transition-all duration-200 hover:bg-white/5 hover:text-white/80">
                             Cancel
                         </button>
-                        <button @click="submit"
+                        <button @click="handleSave"
                             class="flex-1 rounded-xl py-3 text-sm font-bold text-[#0b0f1a] transition-all duration-200 hover:-translate-y-px hover:shadow-lg hover:shadow-emerald-500/25"
                             style="background: linear-gradient(135deg, #63d478, #38b858);">
                             Save Category

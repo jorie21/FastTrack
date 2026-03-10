@@ -25,7 +25,7 @@ class TransactionRepository
                 'transaction_date' => $request->transaction_date ?? now(),
                 'amount' => $request->amount ?? 0,
                 'description' => $request->description ?? null,
-                'created_by_id' => $user->id,
+                'type' => $request->type ?? 'expense',
             ];
 
             $transaction = Transaction::create($data);
@@ -43,8 +43,51 @@ class TransactionRepository
     {
         return Transaction::query()->filterTransactionByRequest($request)->sort()->get();
     }
-    public function delete($request)
+    public function delete($request, $uuid)
     {
-        //code..
+        try {
+            DB::beginTransaction();
+
+            $transaction = Transaction::where('uuid', $uuid)
+                ->where('user_id', $request->user()->id)
+                ->firstOrFail();
+
+            $transaction->delete();
+
+            DB::commit();
+
+            return ['message' => "{$this->title} deleted successfully"];
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    public function update($request, $uuid)
+    {
+        try {
+            DB::beginTransaction();
+
+            $transaction = Transaction::where('uuid', $uuid)
+                ->where('user_id', $request->user()->id)
+                ->firstOrFail();
+
+            $transaction->update([
+                'category_id' => $request->category_id ?? $transaction->category_id,
+                'transaction_date' => $request->transaction_date ?? $transaction->transaction_date,
+                'amount' => $request->amount ?? $transaction->amount,
+                'description' => $request->description ?? $transaction->description,
+                'type' => $request->type ?? $transaction->type,
+            ]);
+
+            DB::commit();
+
+            return $transaction;
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 }

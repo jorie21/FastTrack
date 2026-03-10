@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { useCategoryState } from '@/composables/useCategoryState';
+import { useTransactionState } from '@/composables/useTransactionState';
 import AppLayout from '@/layouts/AppLayout.vue';
 
 
 import type { BreadcrumbItem } from '@/types';
-import type { Category, Transaction } from '../Transaction/types';
+
 
 import AddCategoryModal from './components/AddCategoryModal.vue';
 import AddTransactionModal   from './components/AddTransactionModal.vue';
@@ -15,43 +17,28 @@ import TransactionList       from './components/TransactionList.vue';
 import TransactionTabs       from './components/TransactionTabs.vue';
 import TransactionToolbar    from './components/TransactionToolBar.vue';
 
+const { 
+    categories, 
+    fetchCategories, 
+} = useCategoryState();
+
+const {
+    transactions,
+    fetchTransactions,
+    openModal: openTransactionModal,
+} = useTransactionState();
+
+onMounted(() => {
+    fetchCategories();
+    fetchTransactions();
+});
+
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Transaction', href: 'transaction' },
 ];
 
 // ── Tabs ──────────────────────────────────────────────────────────
 const activeTab = ref<'transactions' | 'categories'>('transactions');
-
-// ── Categories ────────────────────────────────────────────────────
-const categories = ref<Category[]>([
-    { id: 1, name: 'Salary',      color: '#63d478', icon: '💼', type: 'income'  },
-    { id: 2, name: 'Freelance',   color: '#38e8a0', icon: '💻', type: 'income'  },
-    { id: 3, name: 'Food',        color: '#f87171', icon: '🍔', type: 'expense' },
-    { id: 4, name: 'Transport',   color: '#fb923c', icon: '🚗', type: 'expense' },
-    { id: 5, name: 'Utilities',   color: '#60b4ff', icon: '💡', type: 'expense' },
-    { id: 6, name: 'Shopping',    color: '#c084fc', icon: '🛒', type: 'expense' },
-    { id: 7, name: 'Health',      color: '#f472b6', icon: '🏥', type: 'expense' },
-    { id: 8, name: 'Investments', color: '#facc15', icon: '📈', type: 'both'    },
-]);
-
-// ── Transactions ──────────────────────────────────────────────────
-const transactions = ref<Transaction[]>([
-    { id: 1,  title: 'Monthly Salary',    category: 'Salary',      categoryColor: '#63d478', amount: 45000, type: 'income',  date: '2025-06-01', note: 'June payroll'     },
-    { id: 2,  title: 'Freelance Project', category: 'Freelance',   categoryColor: '#38e8a0', amount: 12000, type: 'income',  date: '2025-06-03'                           },
-    { id: 3,  title: 'Grocery Store',     category: 'Food',        categoryColor: '#f87171', amount: 1450,  type: 'expense', date: '2025-06-04', note: 'Weekly groceries' },
-    { id: 4,  title: 'Grab Ride',         category: 'Transport',   categoryColor: '#fb923c', amount: 280,   type: 'expense', date: '2025-06-05'                           },
-    { id: 5,  title: 'Electricity Bill',  category: 'Utilities',   categoryColor: '#60b4ff', amount: 980,   type: 'expense', date: '2025-06-06'                           },
-    { id: 6,  title: 'Online Shopping',   category: 'Shopping',    categoryColor: '#c084fc', amount: 2350,  type: 'expense', date: '2025-06-07', note: 'Shopee haul'      },
-    { id: 7,  title: 'Online Sales',      category: 'Freelance',   categoryColor: '#38e8a0', amount: 3200,  type: 'income',  date: '2025-06-08'                           },
-    { id: 8,  title: 'Pharmacy',          category: 'Health',      categoryColor: '#f472b6', amount: 650,   type: 'expense', date: '2025-06-09'                           },
-    { id: 9,  title: 'Stock Dividend',    category: 'Investments', categoryColor: '#facc15', amount: 1800,  type: 'income',  date: '2025-06-10'                           },
-    { id: 10, title: 'Restaurant',        category: 'Food',        categoryColor: '#f87171', amount: 890,   type: 'expense', date: '2025-06-11', note: 'Team lunch'       },
-    { id: 11, title: 'Internet Bill',     category: 'Utilities',   categoryColor: '#60b4ff', amount: 1299,  type: 'expense', date: '2025-06-12'                           },
-    { id: 12, title: 'Side Project',      category: 'Freelance',   categoryColor: '#38e8a0', amount: 8500,  type: 'income',  date: '2025-06-13'                           },
-    { id: 13, title: 'Medicine',          category: 'Health',      categoryColor: '#f472b6', amount: 430,   type: 'expense', date: '2025-06-14'                           },
-    { id: 14, title: 'Gym Membership',    category: 'Health',      categoryColor: '#f472b6', amount: 999,   type: 'expense', date: '2025-06-15'                           },
-    { id: 15, title: 'Bonus',             category: 'Salary',      categoryColor: '#63d478', amount: 10000, type: 'income',  date: '2025-06-16', note: 'Q2 bonus'         },
-]);
 
 // ── Search & filter ───────────────────────────────────────────────
 const search     = ref('');
@@ -61,10 +48,17 @@ const showFilter = ref(false);
 
 const filteredTransactions = computed(() =>
     transactions.value.filter(t => {
-        const matchSearch = t.title.toLowerCase().includes(search.value.toLowerCase())
-            || t.category.toLowerCase().includes(search.value.toLowerCase());
+        const title = t.title || (t as any).description || '';
+        const matchSearch = title.toLowerCase().includes(search.value.toLowerCase());
         const matchType = filterType.value === 'all' || t.type === filterType.value;
-        const matchCat  = filterCat.value  === 'all' || t.category === filterCat.value;
+        
+        // Category filter (by name)
+        let matchCat = filterCat.value === 'all';
+        if (!matchCat) {
+            const cat = categories.value.find(c => c.name === filterCat.value);
+            matchCat = cat ? (t as any).category_id === cat.id : false;
+        }
+
         return matchSearch && matchType && matchCat;
     })
 );
@@ -93,31 +87,9 @@ const pageNumbers = computed(() => {
     return [1, '...', cur - 1, cur, cur + 1, '...', total];
 });
 
-// ── Transaction actions ───────────────────────────────────────────
-const showAddTxn = ref(false);
-
-function addTransaction(txn: Omit<Transaction, 'id'>) {
-    transactions.value.unshift({ id: Date.now(), ...txn });
-    showAddTxn.value = false;
-    currentPage.value = 1;
-}
-
-function deleteTransaction(id: number) {
-    transactions.value = transactions.value.filter(t => t.id !== id);
-    if (currentPage.value > totalPages.value) currentPage.value = totalPages.value;
-}
-
-// ── Category actions ──────────────────────────────────────────────
+// ── Modal Visibility ──────────────────────────────────────────────
 const showAddCat = ref(false);
 
-function addCategory(cat: Omit<Category, 'id'>) {
-    categories.value.push({ id: Date.now(), ...cat });
-    showAddCat.value = false;
-}
-
-function deleteCategory(id: number) {
-    categories.value = categories.value.filter(c => c.id !== id);
-}
 </script>
 
 <template>
@@ -144,7 +116,7 @@ function deleteCategory(id: number) {
                     @update:filter-type="filterType = $event"
                     @update:filter-cat="filterCat = $event"
                     @update:show-filter="showFilter = $event"
-                    @add="showAddTxn = true"
+                    @add="openTransactionModal"
                 />
 
                 <!-- Results meta -->
@@ -160,7 +132,6 @@ function deleteCategory(id: number) {
                 <TransactionList
                     :transactions="paginatedTransactions"
                     :categories="categories"
-                    @delete="deleteTransaction"
                 />
 
                 <TransactionPagination
@@ -176,8 +147,6 @@ function deleteCategory(id: number) {
             <!-- ── Categories tab ────────────────────────────── -->
             <CategoryList
                 v-if="activeTab === 'categories'"
-                :categories="categories"
-                @delete="deleteCategory"
                 @add="showAddCat = true"
             />
 
@@ -185,16 +154,12 @@ function deleteCategory(id: number) {
 
         <!-- Modals -->
         <AddTransactionModal
-            :open="showAddTxn"
             :categories="categories"
-            @close="showAddTxn = false"
-            @submit="addTransaction"
         />
 
         <AddCategoryModal
             :open="showAddCat"
             @close="showAddCat = false"
-            @submit="addCategory"
         />
 
     </AppLayout>

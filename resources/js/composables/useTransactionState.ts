@@ -1,92 +1,156 @@
 import axios from 'axios'
 import { ref } from 'vue'
-import type { Transaction, Category } from '@/pages/finance/Transaction/types'
+import type { Transaction } from '@/pages/finance/Transaction/types'
 
 export interface TransactionForm {
   title: string
   amount: string
   type: 'income' | 'expense'
-  category: string
+  category_id: number | string
   date: string
   note: string
 }
 
+// --- GLOBAL STATE (SHARED) ---
+const transactions = ref<Transaction[]>([])
+const isLoading = ref(false)
+const isEditing = ref(false)
+const currentUuid = ref<string | null>(null)
+const open = ref(false)
+
+const form = ref<TransactionForm>({
+  title: '',
+  amount: '',
+  type: 'expense',
+  category_id: '',
+  date: '',
+  note: '',
+})
+
 export function useTransactionState() {
-  // --- Modal state ---
-  const open = ref(false)
-
-  function openModal() { open.value = true }
-  function closeModal() { open.value = false }
-
-  // --- Form state ---
-  const form = ref<TransactionForm>({
-    title: '',
-    amount: '',
-    type: 'expense',
-    category: '',
-    date: '',
-    note: '',
-  })
+  const openModal = () => { open.value = true }
+  
+  const closeModal = () => { 
+    open.value = false
+    isEditing.value = false
+    currentUuid.value = null
+    resetForm()
+  }
 
   function resetForm(): void {
     form.value = {
       title: '',
       amount: '',
       type: 'expense',
-      category: '',
-      date: '',
+      category_id: '',
+      date: new Date().toISOString().split('T')[0],
       note: '',
     }
   }
 
-  // --- Data ---
-  const transactions = ref<Transaction[]>([])
-  const categories = ref<Category[]>([])
-
-  // --- Fetch data ---
+  // --- 1. FETCH ---
   async function fetchTransactions(): Promise<void> {
-    const response = await axios.get<Transaction[]>('/api/transactions')
-    transactions.value = response.data
+    try {
+      isLoading.value = true
+      const response = await axios.get<Transaction[]>('/transactions')
+      transactions.value = response.data
+    } catch (error) {
+      console.error('Failed to fetch transactions:', error)
+    } finally {
+      isLoading.value = false
+    }
   }
 
-  async function fetchCategories(): Promise<void> {
-    const response = await axios.get<Category[]>('/api/categories')
-    categories.value = response.data
-  }
-
-  // --- Submit transaction ---
+  // --- 2. SUBMIT (Create) ---
   async function submit(): Promise<void> {
-    if (!form.value.title || !form.value.amount || !form.value.category) return
+    if (!form.value.title || !form.value.amount || !form.value.category_id) return
 
-    const cat = categories.value.find(c => c.name === form.value.category)
-
-    const payload: Omit<Transaction, 'id'> = {
-      title: form.value.title,
+    const payload = {
+      description: form.value.title, // 'title' in UI maps to 'description' in DB
       amount: Number(form.value.amount),
       type: form.value.type,
-      category: form.value.category,
-      categoryColor: cat?.color ?? '#63d478',
-      date: form.value.date || new Date().toISOString().split('T')[0],
-      note: form.value.note || undefined,
+      category_id: form.value.category_id,
+      transaction_date: form.value.date,
+      note: form.value.note,
     }
 
-    const response = await axios.post<Transaction>('/api/transactions', payload)
-    transactions.value.push(response.data)
+    try {
+      const response = await axios.post<Transaction>('/transactions', payload)
+      transactions.value.unshift(response.data)
+      closeModal()
+    } catch (error) {
+      console.error('Failed to save transaction:', error)
+    }
+  }
 
-    resetForm()
-    closeModal()
+  // --- 3. DELETE ---
+  async function deleteTransaction(uuid: string): Promise<void> {
+    const original = [...transactions.value]
+    transactions.value = transactions.value.filter((t) => t.uuid !== uuid)
+
+    try {
+      await axios.delete(`/transactions/${uuid}`)
+    } catch (error) {
+      transactions.value = original
+      console.error('Failed to delete transaction:', error)
+    }
+  }
+
+  // --- 4. EDIT (Prepare) ---
+  function editTransaction(transaction: Transaction): void {
+    isEditing.value = true
+    currentUuid.value = transaction.uuid
+    
+    form.value = {
+      title: transaction.title || (transaction as any).description || '',
+      amount: String(transaction.amount),
+      type: transaction.type,
+      category_id: (transaction as any).category_id || '',
+      date: transaction.date || (transaction as any).transaction_date || '',
+      note: transaction.note || (transaction as any).description || '',
+    }
+    openModal()
+  }
+
+  // --- 5. UPDATE ---
+  async function updateTransaction(): Promise<void> {
+    if (!currentUuid.value || !form.value.title) return
+
+    const payload = {
+      description: form.value.title,
+      amount: Number(form.value.amount),
+      type: form.value.type,
+      category_id: form.value.category_id,
+      transaction_date: form.value.date,
+    }
+
+    try {
+      const response = await axios.put<Transaction>(`/transactions/${currentUuid.value}`, payload)
+      
+      const index = transactions.value.findIndex((t) => t.uuid === currentUuid.value)
+      if (index !== -1) {
+        transactions.value[index] = response.data
+      }
+
+      closeModal()
+    } catch (error) {
+      console.error('Failed to update transaction:', error)
+    }
   }
 
   return {
     open,
     form,
-    categories,
     transactions,
+    isLoading,
+    isEditing,
     openModal,
     closeModal,
     resetForm,
     submit,
     fetchTransactions,
-    fetchCategories,
+    deleteTransaction,
+    editTransaction,
+    updateTransaction,
   }
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import { dashboard, login, register } from '@/routes';
+import { ArrowRight } from 'lucide-vue-next';
 
 defineProps<{
     canRegister: boolean;
@@ -48,20 +49,20 @@ const stats = [
             <template v-if="page.props.auth.user">
                 <Link
                     :href="dashboard()"
-                    class="px-7 py-3.5 text-base font-bold rounded-xl text-[#0b0f1a] transition-all duration-200 hover:-translate-y-px hover:shadow-xl hover:shadow-emerald-500/30"
+                    class="px-7 py-3.5 text-base font-bold rounded-xl text-[#0b0f1a] flex items-center gap-2 transition-all duration-200 hover:-translate-y-px hover:shadow-xl hover:shadow-emerald-500/30"
                     style="background: linear-gradient(135deg, #63d478, #38b858);"
                 >
-                    Go to Dashboard →
+                    Go to Dashboard <ArrowRight class="w-5 h-5" />
                 </Link>
             </template>
             <template v-else>
                 <Link
                     v-if="canRegister"
                     :href="register()"
-                    class="px-7 py-3.5 text-base font-bold rounded-xl text-[#0b0f1a] transition-all duration-200 hover:-translate-y-px hover:shadow-xl hover:shadow-emerald-500/30"
+                    class="px-7 py-3.5 text-base font-bold rounded-xl text-[#0b0f1a] flex items-center gap-2 transition-all duration-200 hover:-translate-y-px hover:shadow-xl hover:shadow-emerald-500/30"
                     style="background: linear-gradient(135deg, #63d478, #38b858);"
                 >
-                    Start Tracking Free →
+                    Start Tracking Free <ArrowRight class="w-5 h-5" />
                 </Link>
                 <Link
                     :href="login()"

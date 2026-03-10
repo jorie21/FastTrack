@@ -1,5 +1,6 @@
 export interface Category {
     id: number;
+    uuid: string;
     name: string;
     color: string;
     icon: string;
@@ -8,8 +9,10 @@ export interface Category {
 
 export interface Transaction {
     id: number;
+    uuid: string;
     title: string;
     category: string;
+    category_id: number;
     categoryColor: string;
     amount: number;
     type: 'income' | 'expense';

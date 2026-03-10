@@ -25,8 +25,13 @@ class TransactionController extends Controller
         return response()->json($this->repo->get($request));
     }
 
-    public function delete(Request $request)
+    public function delete(Request $request, $uuid)
     {
-        return response()->json($this->repo->delete($request));
+        return response()->json($this->repo->delete($request, $uuid));
+    }
+
+    public function update(Request $request, $uuid)
+    {
+        return response()->json($this->repo->update($request, $uuid));
     }
 }

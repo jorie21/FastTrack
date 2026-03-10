@@ -1,40 +1,27 @@
 <script setup lang="ts">
 import { X, ChevronDown } from 'lucide-vue-next';
-import { ref } from 'vue';
-import type { Category, Transaction } from '../types';
+import { useTransactionState } from '@/composables/useTransactionState';
+import type { Category } from '../types';
 
-const props = defineProps<{
-    open: boolean;
+defineProps<{
     categories: Category[];
 }>();
 
-const emit = defineEmits<{
-    close: [];
-    submit: [txn: Omit<Transaction, 'id'>];
-}>();
+const { 
+    form, 
+    open, 
+    closeModal, 
+    isEditing, 
+    submit, 
+    updateTransaction 
+} = useTransactionState();
 
-const form = ref({
-    title: '',
-    amount: '',
-    type: 'expense' as 'income' | 'expense',
-    category: '',
-    date: '',
-    note: '',
-});
-
-function submit() {
-    if (!form.value.title || !form.value.amount || !form.value.category) return;
-    const cat = props.categories.find(c => c.name === form.value.category);
-    emit('submit', {
-        title: form.value.title,
-        amount: Number(form.value.amount),
-        type: form.value.type,
-        category: form.value.category,
-        categoryColor: cat?.color ?? '#63d478',
-        date: form.value.date || new Date().toISOString().split('T')[0],
-        note: form.value.note || undefined,
-    });
-    form.value = { title: '', amount: '', type: 'expense', category: '', date: '', note: '' };
+async function handleSave() {
+    if (isEditing.value) {
+        await updateTransaction();
+    } else {
+        await submit();
+    }
 }
 </script>
 
@@ -45,7 +32,7 @@ function submit() {
                 v-if="open"
                 class="fixed inset-0 z-50 flex items-center justify-center px-4"
                 style="background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);"
-                @click.self="emit('close')"
+                @click.self="closeModal"
             >
                 <div
                     class="w-full max-w-md rounded-2xl border border-white/10 p-7 font-display"
@@ -54,10 +41,14 @@ function submit() {
                     <!-- Header -->
                     <div class="mb-6 flex items-center justify-between">
                         <div>
-                            <h2 class="text-lg font-extrabold tracking-tight text-white">Add Transaction</h2>
-                            <p class="mt-0.5 font-mono text-xs text-white/35">Record a new income or expense</p>
+                            <h2 class="text-lg font-extrabold tracking-tight text-white">
+                                {{ isEditing ? 'Edit' : 'Add' }} Transaction
+                            </h2>
+                            <p class="mt-0.5 font-mono text-xs text-white/35">
+                                {{ isEditing ? 'Update your' : 'Record a new' }} income or expense
+                            </p>
                         </div>
-                        <button @click="emit('close')" class="rounded-lg p-2 text-white/30 transition-all duration-200 hover:bg-white/5 hover:text-white/70">
+                        <button @click="closeModal" class="rounded-lg p-2 text-white/30 transition-all duration-200 hover:bg-white/5 hover:text-white/70">
                             <X class="h-4 w-4" />
                         </button>
                     </div>
@@ -93,10 +84,10 @@ function submit() {
                             <div class="flex flex-col gap-1.5">
                                 <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">Category</label>
                                 <div class="relative">
-                                    <select v-model="form.category"
+                                    <select v-model="form.category_id"
                                         class="w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pr-8 pl-3 font-mono text-sm text-white/80 focus:border-emerald-500/40 focus:outline-none">
                                         <option value="" disabled class="bg-[#0d1117]">Select…</option>
-                                        <option v-for="c in categories" :key="c.id" :value="c.name" class="bg-[#0d1117]">{{ c.icon }} {{ c.name }}</option>
+                                        <option v-for="c in categories" :key="c.id" :value="c.id" class="bg-[#0d1117]">{{ c.icon }} {{ c.name }}</option>
                                     </select>
                                     <ChevronDown class="pointer-events-none absolute top-1/2 right-2.5 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
                                 </div>
@@ -119,14 +110,14 @@ function submit() {
 
                     <!-- Actions -->
                     <div class="mt-6 flex gap-3">
-                        <button @click="emit('close')"
+                        <button @click="closeModal"
                             class="flex-1 rounded-xl border border-white/10 py-3 text-sm font-semibold text-white/50 transition-all duration-200 hover:bg-white/5 hover:text-white/80">
                             Cancel
                         </button>
-                        <button @click="submit"
+                        <button @click="handleSave"
                             class="flex-1 rounded-xl py-3 text-sm font-bold text-[#0b0f1a] transition-all duration-200 hover:-translate-y-px hover:shadow-lg hover:shadow-emerald-500/25"
                             style="background: linear-gradient(135deg, #63d478, #38b858);">
-                            Save Transaction
+                            {{ isEditing ? 'Update' : 'Save' }} Transaction
                         </button>
                     </div>
                 </div>
