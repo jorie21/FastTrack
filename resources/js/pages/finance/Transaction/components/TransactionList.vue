@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ArrowUpRight, ArrowDownLeft, Trash2, Pencil, Search, CreditCard } from 'lucide-vue-next';
+import { ArrowUpRight, ArrowDownLeft, Trash2, Pencil, Search } from 'lucide-vue-next';
 import { onMounted } from 'vue';
-import { useTransactionState } from '@/composables/useTransactionState';
 import DynamicIcon from '@/components/DynamicIcon.vue';
+import { useTransactionState } from '@/composables/useTransactionState';
 import type { Category } from '../types';
 
 defineProps<{
