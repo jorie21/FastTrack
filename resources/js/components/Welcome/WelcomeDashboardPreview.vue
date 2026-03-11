@@ -57,7 +57,7 @@ const recentTransactions = [
             </div>
 
             <!-- Stats Overlay -->
-            <div class="mt-6 grid grid-cols-2 gap-3">
+            <div class="mt-6 grid grid-cols-1 xs:grid-cols-2 gap-3">
                 <div class="rounded-2xl bg-emerald-500/10 p-4 border border-emerald-500/10">
                     <div class="flex items-center gap-2 text-emerald-400 mb-1">
                         <TrendingUp class="w-3 h-3" />

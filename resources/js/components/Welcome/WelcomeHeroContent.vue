@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
-import { dashboard, login, register } from '@/routes';
 import { ArrowRight } from 'lucide-vue-next';
+import { dashboard, login, register } from '@/routes';
 
 defineProps<{
     canRegister: boolean;
@@ -34,7 +34,7 @@ const stats = [
             <span style="background: linear-gradient(135deg, #63d478, #38e8a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
                 Every
             </span>
-            <br />Dollar.<br />
+            <br />Peso.<br />
             <span class="text-white/30">In &amp; Out.</span>
         </h1>
 

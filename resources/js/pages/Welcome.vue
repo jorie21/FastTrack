@@ -33,10 +33,12 @@ withDefaults(
         <WelcomeNav :can-register="canRegister" />
 
         <!-- Hero: single centered column on mobile, two columns on lg+ -->
-        <main class="relative  z-10 flex-1 flex items-center justify-center w-full px-6 py-12 lg:px-12 lg:py-0">
-            <div class="w-full p-10 max-w-6xl flex flex-col items-center gap-12 lg:flex-row lg:items-center lg:gap-16">
+        <main class="relative z-10 flex-1 flex items-center justify-center w-full px-4 sm:px-6 py-12 lg:px-12 lg:py-0">
+            <div class="w-full p-4 sm:p-8 lg:p-10 max-w-6xl flex flex-col items-center gap-12 lg:flex-row lg:items-center lg:gap-16">
                 <WelcomeHeroContent :can-register="canRegister" />
-                <WelcomeDashboardPreview />
+                <div class="w-full max-w-md lg:max-w-none lg:flex-1">
+                    <WelcomeDashboardPreview />
+                </div>
             </div>
         </main>
     </div>
