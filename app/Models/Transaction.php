@@ -21,6 +21,11 @@ class Transaction extends Model
         'type',
     ];
 
+    protected $casts = [
+        'transaction_date' => 'date',
+        'amount' => 'float',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);

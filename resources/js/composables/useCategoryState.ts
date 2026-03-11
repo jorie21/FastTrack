@@ -71,6 +71,7 @@ export function useCategoryState() {
       closeModal()
     } catch (error) {
       console.error('Failed to save:', error)
+      throw error
     }
   }
 
@@ -83,7 +84,6 @@ export function useCategoryState() {
     try {
       await axios.delete(`/categories/${uuid}`)
     } catch (error) {
-      // If server fails, put the data back
       categories.value = original
       console.error('Failed to delete:', error)
     }
@@ -109,8 +109,6 @@ export function useCategoryState() {
 
     try {
       const response = await axios.put<Category>(`/categories/${currentUuid.value}`, form.value)
-      
-      // Find the item in our shared list and update it
       const index = categories.value.findIndex((c) => c.uuid === currentUuid.value)
       if (index !== -1) {
         categories.value[index] = response.data
@@ -119,6 +117,7 @@ export function useCategoryState() {
       closeModal()
     } catch (error) {
       console.error('Failed to update:', error)
+      throw error
     }
   }
 

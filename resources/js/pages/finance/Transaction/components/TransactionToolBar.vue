@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Search, SlidersHorizontal, Plus, ChevronDown } from 'lucide-vue-next';
+import { Search, SlidersHorizontal, Plus, ChevronDown, Download } from 'lucide-vue-next';
 import type { Category } from '../types';
 defineProps<{
     search: string;
@@ -15,6 +15,7 @@ const emit = defineEmits<{
     'update:filterCat':  [value: string];
     'update:showFilter': [value: boolean];
     'add': [];
+    'export': [];
 }>();
 </script>
 
@@ -45,14 +46,24 @@ const emit = defineEmits<{
                 Filters
             </button>
 
-            <button
-                @click="emit('add')"
-                class="flex shrink-0 items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-[#0b0f1a] transition-all duration-200 hover:-translate-y-px hover:shadow-lg hover:shadow-emerald-500/25"
-                style="background: linear-gradient(135deg, #63d478, #38b858);"
-            >
-                <Plus class="h-4 w-4" />
-                Add Transaction
-            </button>
+            <div class="flex items-center gap-2">
+                <button
+                    @click="emit('export')"
+                    class="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white/60 transition-all duration-200 hover:bg-white/8 hover:text-white"
+                >
+                    <Download class="h-4 w-4" />
+                    Export
+                </button>
+
+                <button
+                    @click="emit('add')"
+                    class="flex shrink-0 items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold text-[#0b0f1a] transition-all duration-200 hover:-translate-y-px hover:shadow-lg hover:shadow-emerald-500/25"
+                    style="background: linear-gradient(135deg, #63d478, #38b858);"
+                >
+                    <Plus class="h-4 w-4" />
+                    Add Transaction
+                </button>
+            </div>
         </div>
 
         <!-- Filter panel -->
@@ -89,7 +100,7 @@ const emit = defineEmits<{
                         class="cursor-pointer appearance-none rounded-lg border border-white/10 bg-white/5 py-1.5 pr-8 pl-3 font-mono text-xs text-white/70 focus:border-emerald-500/40 focus:outline-none"
                     >
                         <option value="all" class="bg-[#0d1117]">All categories</option>
-                        <option v-for="c in categories" :key="c.id" :value="c.name" class="bg-[#0d1117]">
+                        <option v-for="c in categories" :key="c.id" :value="String(c.id)" class="bg-[#0d1117]">
                             {{ c.icon }} {{ c.name }}
                         </option>
                     </select>

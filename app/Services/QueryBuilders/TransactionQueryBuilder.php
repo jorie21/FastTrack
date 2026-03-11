@@ -21,6 +21,11 @@ class TransactionQueryBuilder extends Builder
         return $this->whereDate('transaction_date', $value);
     }
 
+    public function getByType($value): self
+    {
+        return $this->where('type', $value);
+    }
+
     public function search($keyword): self
     {
         if (empty($keyword)) return $this;
@@ -39,8 +44,9 @@ class TransactionQueryBuilder extends Builder
     public function filterTransactionByRequest($request): self
     {
         return $this->getByUser($request->user()->id)
-            ->when($request->category_id, fn($q) => $q->getByCategory($request->category_id))
+            ->when($request->category_id && $request->category_id !== 'all', fn($q) => $q->getByCategory($request->category_id))
             ->when($request->transaction_date, fn($q) => $q->getByDate($request->transaction_date))
+            ->when($request->type && $request->type !== 'all', fn($q) => $q->getByType($request->type))
             ->when($request->keyword, fn($q) => $q->search($request->keyword));
     }
 }

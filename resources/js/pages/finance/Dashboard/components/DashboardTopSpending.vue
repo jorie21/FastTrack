@@ -1,17 +1,13 @@
 <script setup lang="ts">
+import { onMounted } from 'vue';
+import { useDashboardState } from '@/composables/useDashboardState';
 import DynamicIcon from '@/components/DynamicIcon.vue';
 
-interface Category {
-    name: string;
-    icon: string;
-    color: string;
-    amount: number;
-    pct: number;
-}
+const { topSpending, fetchTopSpending } = useDashboardState();
 
-defineProps<{
-    categories: Category[];
-}>();
+onMounted(() => {
+    fetchTopSpending();
+});
 
 const fmt = (n: number) => '₱' + n.toLocaleString();
 </script>
@@ -23,11 +19,11 @@ const fmt = (n: number) => '₱' + n.toLocaleString();
     >
         <div class="mb-5">
             <h2 class="text-base font-extrabold tracking-tight text-white">Top Spending</h2>
-            <p class="font-mono text-[11px] text-white/30 mt-0.5 uppercase tracking-widest">By category</p>
+            <p class="font-mono text-[11px] text-white/30 mt-0.5 uppercase tracking-widest">This month</p>
         </div>
 
         <div class="flex flex-col gap-3.5">
-            <div v-for="cat in categories" :key="cat.name" class="flex flex-col gap-1.5">
+            <div v-if="topSpending.length > 0" v-for="cat in topSpending" :key="cat.name" class="flex flex-col gap-1.5">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <DynamicIcon :name="cat.icon" class="w-4 h-4" :style="{ color: cat.color }" />
@@ -44,6 +40,9 @@ const fmt = (n: number) => '₱' + n.toLocaleString();
                         :style="{ width: cat.pct + '%', background: cat.color }"
                     />
                 </div>
+            </div>
+            <div v-else class="py-8 text-center">
+                <p class="font-mono text-[10px] text-white/20 uppercase tracking-widest">No expenses yet</p>
             </div>
         </div>
     </div>

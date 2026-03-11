@@ -49,10 +49,10 @@ export function useTransactionState() {
   }
 
   // --- 1. FETCH ---
-  async function fetchTransactions(): Promise<void> {
+  async function fetchTransactions(filters: Record<string, any> = {}): Promise<void> {
     try {
       isLoading.value = true
-      const response = await axios.get<Transaction[]>('/transactions')
+      const response = await axios.get<Transaction[]>('/transactions', { params: filters })
       transactions.value = response.data
     } catch (error) {
       console.error('Failed to fetch transactions:', error)
@@ -64,6 +64,8 @@ export function useTransactionState() {
   // --- 2. SUBMIT (Create) ---
   async function submit(): Promise<void> {
     if (!form.value.title || !form.value.amount || !form.value.category_id) return
+
+    isLoading.value = true
 
     const payload = {
       description: form.value.title, // 'title' in UI maps to 'description' in DB
@@ -80,6 +82,8 @@ export function useTransactionState() {
       closeModal()
     } catch (error) {
       console.error('Failed to save transaction:', error)
+    } finally {
+      isLoading.value = false
     }
   }
 
@@ -116,6 +120,8 @@ export function useTransactionState() {
   async function updateTransaction(): Promise<void> {
     if (!currentUuid.value || !form.value.title) return
 
+    isLoading.value = true
+
     const payload = {
       description: form.value.title,
       amount: Number(form.value.amount),
@@ -135,6 +141,8 @@ export function useTransactionState() {
       closeModal()
     } catch (error) {
       console.error('Failed to update transaction:', error)
+    } finally {
+      isLoading.value = false
     }
   }
 

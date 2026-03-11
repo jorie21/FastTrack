@@ -1,24 +1,15 @@
 <script setup lang="ts">
 import { Plus, Trash2, Pencil } from 'lucide-vue-next';
-import { onMounted, onUnmounted } from 'vue';
-import { useCategoryState } from '@/composables/useCategoryState';
+import { onMounted } from 'vue';
 import DynamicIcon from '@/components/DynamicIcon.vue';
+import { useCategoryState } from '@/composables/useCategoryState';
 
 const { categories, fetchCategories, deleteCategory, editCategory, openModal } = useCategoryState();
 
-let interval: any;
-
 onMounted(() => {
     fetchCategories();
-    // Real-time fetch every 3 seconds
-    interval = setInterval(fetchCategories, 3000);
 });
-
-onUnmounted(() => {
-    if (interval) clearInterval(interval);
-});
-
-const emit = defineEmits<{
+defineEmits<{
     add: [];
 }>();
 </script>

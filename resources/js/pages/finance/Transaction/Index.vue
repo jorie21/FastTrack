@@ -46,22 +46,25 @@ const filterType = ref<'all' | 'income' | 'expense'>('all');
 const filterCat  = ref('all');
 const showFilter = ref(false);
 
-const filteredTransactions = computed(() =>
-    transactions.value.filter(t => {
-        const title = t.title || (t as any).description || '';
-        const matchSearch = title.toLowerCase().includes(search.value.toLowerCase());
-        const matchType = filterType.value === 'all' || t.type === filterType.value;
-        
-        // Category filter (by name)
-        let matchCat = filterCat.value === 'all';
-        if (!matchCat) {
-            const cat = categories.value.find(c => c.name === filterCat.value);
-            matchCat = cat ? (t as any).category_id === cat.id : false;
-        }
+const updateFilters = () => {
+    const filters: Record<string, any> = {};
+    if (search.value) filters.keyword = search.value;
+    if (filterType.value !== 'all') filters.type = filterType.value;
+    if (filterCat.value !== 'all') filters.category_id = filterCat.value;
+    
+    fetchTransactions(filters);
+};
 
-        return matchSearch && matchType && matchCat;
-    })
-);
+// Debounce search
+let searchTimeout: any;
+watch(search, () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(updateFilters, 300);
+});
+
+watch([filterType, filterCat], updateFilters);
+
+const filteredTransactions = computed(() => transactions.value);
 
 // ── Pagination ────────────────────────────────────────────────────
 const PAGE_SIZE   = 7;
@@ -90,6 +93,38 @@ const pageNumbers = computed(() => {
 // ── Modal Visibility ──────────────────────────────────────────────
 const showAddCat = ref(false);
 
+// ── Export ────────────────────────────────────────────────────────
+const handleExport = () => {
+    if (transactions.value.length === 0) return;
+
+    const headers = ['Date', 'Description', 'Category', 'Type', 'Amount'];
+    const rows = filteredTransactions.value.map(t => {
+        const catName = categories.value.find(c => c.id === (t as any).category_id)?.name || 'General';
+        return [
+            t.date || (t as any).transaction_date,
+            t.title || (t as any).description,
+            catName,
+            t.type,
+            t.amount
+        ];
+    });
+
+    const csvContent = [
+        headers.join(','),
+        ...rows.map(r => r.map(val => `"${val}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `transactions_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
 </script>
 
 <template>
@@ -117,6 +152,7 @@ const showAddCat = ref(false);
                     @update:filter-cat="filterCat = $event"
                     @update:show-filter="showFilter = $event"
                     @add="openTransactionModal"
+                    @export="handleExport"
                 />
 
                 <!-- Results meta -->

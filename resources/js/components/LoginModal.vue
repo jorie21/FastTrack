@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { Form } from '@inertiajs/vue3';
+import {  Check } from 'lucide-vue-next';
 import InputError from '@/components/InputError.vue';
 import TextLink from '@/components/TextLink.vue';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-    Dialog,
     DialogContent,
+    Dialog,
     DialogHeader,
     DialogTitle,
     DialogDescription,
@@ -17,7 +18,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
-import { Zap, Check } from 'lucide-vue-next';
 
 defineProps<{
     open: boolean;
@@ -39,13 +39,7 @@ const emit = defineEmits<{
         >
             <!-- Logo -->
             <div class="flex items-center justify-center gap-2.5 mb-6 text-emerald-400">
-                <Zap class="h-6 w-6 fill-current" />
-                <span
-                    class="text-xl font-extrabold tracking-tight"
-                    style="background: linear-gradient(135deg, #63d478, #38e8a0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;"
-                >
-                    FastTrack
-                </span>
+              <img src="/logo/FastTrackLogo.png" alt="FastTrack Logo" class="h-10 w-auto" />
             </div>
 
             <DialogHeader class="mb-6 text-center sm:text-center">
