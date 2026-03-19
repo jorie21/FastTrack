@@ -8,6 +8,12 @@ export interface DashboardStats {
   savings_rate: number;
 }
 
+export interface TodayStats {
+  income: number;
+  expense: number;
+  net: number;
+}
+
 export interface ChartMonth {
   label: string;
   income: number;
@@ -41,6 +47,12 @@ const stats = ref<DashboardStats>({
   savings_rate: 0,
 });
 
+const todayStats = ref<TodayStats>({
+  income: 0,
+  expense: 0,
+  net: 0,
+});
+
 const cashFlow = ref<ChartMonth[]>([]);
 const topSpending = ref<TopSpendingCategory[]>([]);
 const recentTransactions = ref<RecentTransaction[]>([]);
@@ -55,6 +67,18 @@ export function useDashboardState() {
       stats.value = response.data;
     } catch (error) {
       console.error('Failed to fetch dashboard stats:', error);
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function fetchTodayStats(): Promise<void> {
+    try {
+      isLoading.value = true;
+      const response = await axios.get<TodayStats>('/dashboard/today');
+      todayStats.value = response.data;
+    } catch (error) {
+      console.error('Failed to fetch today stats:', error);
     } finally {
       isLoading.value = false;
     }
@@ -98,11 +122,13 @@ export function useDashboardState() {
 
   return {
     stats,
+    todayStats,
     cashFlow,
     topSpending,
     recentTransactions,
     isLoading,
     fetchStats,
+    fetchTodayStats,
     fetchCashFlow,
     fetchTopSpending,
     fetchRecentTransactions,

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { LayoutGrid, FileText } from 'lucide-vue-next';
+import { LayoutGrid, FileText, Wallet } from 'lucide-vue-next';
 import AppLogo from '@/components/AppLogo.vue';
 
 import NavMain from '@/components/NavMain.vue';
@@ -23,6 +23,11 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
+    {
+       title: 'Wallet',
+       href: '/wallet',
+       icon: Wallet,
+   },
     {
         title: 'Transaction',
         href: '/transaction',

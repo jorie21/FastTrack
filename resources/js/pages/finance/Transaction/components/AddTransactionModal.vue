@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { X, ChevronDown, Loader2 } from 'lucide-vue-next';
+import { X, ChevronDown, Loader2, Info } from 'lucide-vue-next';
+import { onMounted, computed, ref } from 'vue';
 import { useTransactionState } from '@/composables/useTransactionState';
+import { useWalletState } from '@/composables/useWalletState';
 import type { Category } from '../types';
 
 defineProps<{
@@ -17,13 +19,44 @@ const {
     updateTransaction 
 } = useTransactionState();
 
+const { wallets, fetchWallets } = useWalletState();
+const localError = ref<string | null>(null);
+
+onMounted(() => {
+    fetchWallets();
+});
+
+const selectedWallet = computed(() => {
+    return wallets.value.find(w => w.id === form.value.wallet_id);
+});
+
+const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-PH', {
+        style: 'currency',
+        currency: 'PHP',
+    }).format(amount);
+};
+
 async function handleSave() {
     if (isLoading.value) return;
+    localError.value = null;
+
+    // Frontend Validation
+    if (form.value.type === 'expense' && selectedWallet.value) {
+        if (selectedWallet.value.name !== 'Cash' && Number(form.value.amount) > Number(selectedWallet.value.balance)) {
+            localError.value = "Not enough balance in this wallet.";
+            return;
+        }
+    }
     
-    if (isEditing.value) {
-        await updateTransaction();
-    } else {
-        await submit();
+    try {
+        if (isEditing.value) {
+            await updateTransaction();
+        } else {
+            await submit();
+        }
+    } catch (error: any) {
+        localError.value = error.response?.data?.message || error.message || "Failed to save transaction";
     }
 }
 </script>
@@ -74,6 +107,12 @@ async function handleSave() {
                         >{{ t }}</button>
                     </div>
 
+                    <!-- Error Alert -->
+                    <div v-if="localError" class="mb-4 flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/5 p-3.5 text-red-400">
+                        <Info class="h-4 w-4 shrink-0" />
+                        <p class="font-mono text-xs">{{ localError }}</p>
+                    </div>
+
                     <!-- Fields -->
                     <div class="flex flex-col gap-4" :class="{ 'opacity-50 pointer-events-none': isLoading }">
                         <div class="flex flex-col gap-1.5">
@@ -104,11 +143,34 @@ async function handleSave() {
                                 </div>
                             </div>
                             <div class="flex flex-col gap-1.5">
-                                <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">Date</label>
-                                <input v-model="form.date" type="date"
-                                    :disabled="isLoading"
-                                    class="rounded-xl border border-white/10 bg-white/5 px-3 py-3 font-mono text-sm text-white/80 [color-scheme:dark] transition-all duration-200 focus:border-emerald-500/50 focus:outline-none" />
+                                <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">Wallet</label>
+                                <div class="relative">
+                                    <select v-model="form.wallet_id"
+                                        :disabled="isLoading"
+                                        class="w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pr-8 pl-3 font-mono text-sm text-white/80 focus:border-emerald-500/40 focus:outline-none">
+                                        <option value="" disabled class="bg-[#0d1117]">Select…</option>
+                                        <option v-for="w in wallets" :key="w.id" :value="w.id" class="bg-[#0d1117]">{{ w.name }}</option>
+                                    </select>
+                                    <ChevronDown class="pointer-events-none absolute top-1/2 right-2.5 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
+                                </div>
                             </div>
+                        </div>
+
+                        <!-- Wallet Balance Display -->
+                        <div v-if="selectedWallet" class="rounded-xl border border-white/5 bg-white/2 p-3">
+                            <div class="flex items-center justify-between">
+                                <span class="font-mono text-[10px] uppercase tracking-wider text-white/30">Available Balance</span>
+                                <span class="font-mono text-xs font-bold" :class="Number(selectedWallet.balance) < 0 ? 'text-red-400' : 'text-emerald-400'">
+                                    {{ formatCurrency(Number(selectedWallet.balance)) }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-1.5">
+                            <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">Date</label>
+                            <input v-model="form.date" type="date"
+                                :disabled="isLoading"
+                                class="rounded-xl border border-white/10 bg-white/5 px-3 py-3 font-mono text-sm text-white/80 [color-scheme:dark] transition-all duration-200 focus:border-emerald-500/50 focus:outline-none" />
                         </div>
 
                         <div class="flex flex-col gap-1.5">

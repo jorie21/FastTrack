@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ArrowUpRight, ArrowDownLeft, Trash2, Pencil, Search } from 'lucide-vue-next';
+import { ArrowUpRight, ArrowDownLeft, Trash2, Pencil, Search, Wallet as WalletIcon } from 'lucide-vue-next';
 import { onMounted } from 'vue';
 import DynamicIcon from '@/components/DynamicIcon.vue';
 import { useTransactionState } from '@/composables/useTransactionState';
+import { useWalletState } from '@/composables/useWalletState';
 import type { Category } from '../types';
 
 defineProps<{
@@ -16,14 +17,21 @@ const {
     editTransaction 
 } = useTransactionState();
 
+const { wallets, fetchWallets } = useWalletState();
+
 onMounted(() => {
     fetchTransactions();
+    fetchWallets();
 });
 
 const fmt = (n: number) => '₱' + Number(n).toLocaleString();
 
 const getCategory = (id: number, categories: Category[]) => {
     return categories.find(c => c.id === id);
+};
+
+const getWallet = (id: number) => {
+    return wallets.value.find(w => w.id === id);
 };
 </script>
 
@@ -60,6 +68,13 @@ const getCategory = (id: number, categories: Category[]) => {
                             background: (getCategory((txn as any).category_id, categories)?.color ?? '#63d478') + '18' 
                         }"
                     >{{ getCategory((txn as any).category_id, categories)?.name ?? 'General' }}</span>
+                    <span
+                        v-if="getWallet((txn as any).wallet_id)"
+                        class="flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] text-white/40 bg-white/5 border border-white/5"
+                    >
+                        <WalletIcon class="h-2.5 w-2.5" />
+                        {{ getWallet((txn as any).wallet_id)?.name }}
+                    </span>
                     <span class="font-mono text-[10px] text-white/25">{{ txn.date || (txn as any).transaction_date }}</span>
                     <span v-if="txn.note" class="truncate font-mono text-[10px] text-white/25">· {{ txn.note }}</span>
                 </div>

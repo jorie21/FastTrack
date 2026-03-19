@@ -16,6 +16,11 @@ class TransactionQueryBuilder extends Builder
         return $this->where('category_id', $value);
     }
 
+    public function getByWallet($value): self
+    {
+        return $this->where('wallet_id', $value);
+    }
+
     public function getByDate($value): self
     {
         return $this->whereDate('transaction_date', $value);
@@ -45,6 +50,7 @@ class TransactionQueryBuilder extends Builder
     {
         return $this->getByUser($request->user()->id)
             ->when($request->category_id && $request->category_id !== 'all', fn($q) => $q->getByCategory($request->category_id))
+            ->when($request->wallet_id && $request->wallet_id !== 'all', fn($q) => $q->getByWallet($request->wallet_id))
             ->when($request->transaction_date, fn($q) => $q->getByDate($request->transaction_date))
             ->when($request->type && $request->type !== 'all', fn($q) => $q->getByType($request->type))
             ->when($request->keyword, fn($q) => $q->search($request->keyword));

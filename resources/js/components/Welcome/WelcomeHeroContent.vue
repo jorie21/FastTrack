@@ -3,6 +3,7 @@ import { Link, usePage } from '@inertiajs/vue3';
 import { ArrowRight } from 'lucide-vue-next';
 import { dashboard, login, register } from '@/routes';
 
+
 defineProps<{
     canRegister: boolean;
 }>();

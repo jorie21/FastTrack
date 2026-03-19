@@ -32,6 +32,27 @@ class DashboardRepository
         ];
     }
 
+    public function getTodayStats(Request $request)
+    {
+        $user = $request->user();
+        $today = now()->format('Y-m-d');
+
+        $stats = Transaction::query()
+            ->getByUser($user->id)
+            ->getByDate($today)
+            ->selectRaw("
+                SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
+                SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense
+            ")
+            ->first();
+
+        return [
+            'income' => (float) ($stats->income ?? 0),
+            'expense' => (float) ($stats->expense ?? 0),
+            'net' => (float) (($stats->income ?? 0) - ($stats->expense ?? 0)),
+        ];
+    }
+
     public function getCashFlow(Request $request)
     {
         $user = $request->user();

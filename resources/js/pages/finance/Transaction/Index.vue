@@ -37,10 +37,9 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Transaction', href: 'transaction' },
 ];
 
-// ── Tabs ──────────────────────────────────────────────────────────
+
 const activeTab = ref<'transactions' | 'categories'>('transactions');
 
-// ── Search & filter ───────────────────────────────────────────────
 const search     = ref('');
 const filterType = ref<'all' | 'income' | 'expense'>('all');
 const filterCat  = ref('all');
@@ -132,13 +131,11 @@ const handleExport = () => {
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex flex-col gap-6 p-6 font-display">
 
-            <!-- Tabs -->
             <TransactionTabs
                 :active-tab="activeTab"
                 @update:active-tab="activeTab = $event"
             />
 
-            <!-- ── Transactions tab ───────────────────────────── -->
             <div v-if="activeTab === 'transactions'" class="flex flex-col gap-4">
 
                 <TransactionToolbar
@@ -155,7 +152,6 @@ const handleExport = () => {
                     @export="handleExport"
                 />
 
-                <!-- Results meta -->
                 <div class="flex items-center justify-between">
                     <p class="font-mono text-[11px] uppercase tracking-widest text-white/30">
                         {{ filteredTransactions.length }} result{{ filteredTransactions.length !== 1 ? 's' : '' }}
@@ -180,7 +176,6 @@ const handleExport = () => {
                 />
             </div>
 
-            <!-- ── Categories tab ────────────────────────────── -->
             <CategoryList
                 v-if="activeTab === 'categories'"
                 @add="showAddCat = true"
@@ -188,7 +183,6 @@ const handleExport = () => {
 
         </div>
 
-        <!-- Modals -->
         <AddTransactionModal
             :categories="categories"
         />

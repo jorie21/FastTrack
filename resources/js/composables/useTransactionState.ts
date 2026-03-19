@@ -1,12 +1,15 @@
 import axios from 'axios'
 import { ref } from 'vue'
 import type { Transaction } from '@/pages/finance/Transaction/types'
+import { useWalletState } from './useWalletState'
+import { useDashboardState } from './useDashboardState'
 
 export interface TransactionForm {
   title: string
   amount: string
   type: 'income' | 'expense'
   category_id: number | string
+  wallet_id: number | string
   date: string
   note: string
 }
@@ -23,6 +26,7 @@ const form = ref<TransactionForm>({
   amount: '',
   type: 'expense',
   category_id: '',
+  wallet_id: '',
   date: '',
   note: '',
 })
@@ -43,6 +47,7 @@ export function useTransactionState() {
       amount: '',
       type: 'expense',
       category_id: '',
+      wallet_id: '',
       date: new Date().toISOString().split('T')[0],
       note: '',
     }
@@ -63,7 +68,7 @@ export function useTransactionState() {
 
   // --- 2. SUBMIT (Create) ---
   async function submit(): Promise<void> {
-    if (!form.value.title || !form.value.amount || !form.value.category_id) return
+    if (!form.value.title || !form.value.amount || !form.value.category_id || !form.value.wallet_id) return
 
     isLoading.value = true
 
@@ -72,6 +77,7 @@ export function useTransactionState() {
       amount: Number(form.value.amount),
       type: form.value.type,
       category_id: form.value.category_id,
+      wallet_id: form.value.wallet_id,
       transaction_date: form.value.date,
       note: form.value.note,
     }
@@ -79,9 +85,16 @@ export function useTransactionState() {
     try {
       const response = await axios.post<Transaction>('/transactions', payload)
       transactions.value.unshift(response.data)
+      
+      // Refresh wallets and today stats to keep balances in sync
+      const { fetchWallets } = useWalletState()
+      const { fetchTodayStats } = useDashboardState()
+      await Promise.all([fetchWallets(), fetchTodayStats()])
+
       closeModal()
     } catch (error) {
       console.error('Failed to save transaction:', error)
+      throw error
     } finally {
       isLoading.value = false
     }
@@ -94,6 +107,11 @@ export function useTransactionState() {
 
     try {
       await axios.delete(`/transactions/${uuid}`)
+      
+      // Refresh wallets and today stats to keep balances in sync
+      const { fetchWallets } = useWalletState()
+      const { fetchTodayStats } = useDashboardState()
+      await Promise.all([fetchWallets(), fetchTodayStats()])
     } catch (error) {
       transactions.value = original
       console.error('Failed to delete transaction:', error)
@@ -110,6 +128,7 @@ export function useTransactionState() {
       amount: String(transaction.amount),
       type: transaction.type,
       category_id: (transaction as any).category_id || '',
+      wallet_id: (transaction as any).wallet_id || '',
       date: transaction.date || (transaction as any).transaction_date || '',
       note: transaction.note || (transaction as any).description || '',
     }
@@ -127,6 +146,7 @@ export function useTransactionState() {
       amount: Number(form.value.amount),
       type: form.value.type,
       category_id: form.value.category_id,
+      wallet_id: form.value.wallet_id,
       transaction_date: form.value.date,
     }
 
@@ -138,9 +158,15 @@ export function useTransactionState() {
         transactions.value[index] = response.data
       }
 
+      // Refresh wallets and today stats to keep balances in sync
+      const { fetchWallets } = useWalletState()
+      const { fetchTodayStats } = useDashboardState()
+      await Promise.all([fetchWallets(), fetchTodayStats()])
+
       closeModal()
     } catch (error) {
       console.error('Failed to update transaction:', error)
+      throw error
     } finally {
       isLoading.value = false
     }

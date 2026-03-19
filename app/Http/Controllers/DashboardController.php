@@ -19,6 +19,11 @@ class DashboardController extends Controller
         return response()->json($this->repo->getStats($request));
     }
 
+    public function todayStats(Request $request)
+    {
+        return response()->json($this->repo->getTodayStats($request));
+    }
+
     public function cashFlow(Request $request)
     {
         return response()->json($this->repo->getCashFlow($request));
