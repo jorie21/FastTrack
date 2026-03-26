@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { X, ChevronDown, Loader2, Wallet as WalletIcon } from 'lucide-vue-next';
+import { X, ChevronDown, Loader2, Wallet as WalletIcon, Info } from 'lucide-vue-next';
+import { ref, watch } from 'vue';
 import { useWalletState } from '@/composables/useWalletState';
-import AlertError from '@/components/AlertError.vue';
+import InputError from '@/components/InputError.vue';
 
 const { 
     form, 
@@ -9,18 +10,42 @@ const {
     closeModal, 
     isEditing, 
     isLoading,
-    errorMessage,
     submit, 
     updateWallet 
 } = useWalletState();
 
+const globalError = ref<string | null>(null);
+const errors = ref<Record<string, string>>({});
+
+// Clear errors when modal opens
+watch(open, (val) => {
+    if (val) {
+        globalError.value = null;
+        errors.value = {};
+    }
+});
+
 async function handleSave() {
     if (isLoading.value) return;
+    globalError.value = null;
+    errors.value = {};
     
-    if (isEditing.value) {
-        await updateWallet();
-    } else {
-        await submit();
+    try {
+        if (isEditing.value) {
+            await updateWallet();
+        } else {
+            await submit();
+        }
+    } catch (error: any) {
+        if (error.response?.status === 422) {
+            const backendErrors = error.response.data.errors;
+            Object.keys(backendErrors).forEach(key => {
+                errors.value[key] = backendErrors[key][0];
+            });
+            globalError.value = "Please correct the errors below.";
+        } else {
+            globalError.value = error.response?.data?.message || error.message || "Failed to save wallet";
+        }
     }
 }
 
@@ -65,35 +90,50 @@ const walletTypes = [
                         </button>
                     </div>
 
-                    <!-- Error Message -->
-                    <AlertError v-if="errorMessage" :title="errorMessage" class="mb-4" />
+                    <!-- Error Alert -->
+                    <div v-if="globalError" class="mb-4 flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/5 p-3.5 text-red-400">
+                        <Info class="h-4 w-4 shrink-0" />
+                        <p class="font-mono text-xs">{{ globalError }}</p>
+                    </div>
 
                     <!-- Fields -->
                     <div class="flex flex-col gap-4" :class="{ 'opacity-50 pointer-events-none': isLoading }">
                         <div class="flex flex-col gap-1.5">
-                            <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">Wallet Name</label>
+                            <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">
+                                Wallet Name <span class="text-red-500">*</span>
+                            </label>
                             <input v-model="form.name" type="text" placeholder="e.g. GCash, BPI, My Cash"
-                                :disabled="isLoading"
-                                class="rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-sm text-white/90 transition-all duration-200 placeholder:text-white/20 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none" />
+                                :disabled="isLoading" required
+                                class="rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-sm text-white/90 transition-all duration-200 placeholder:text-white/20 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none"
+                                :class="{ 'border-red-500/50': errors.name }" />
+                            <InputError :message="errors.name" />
                         </div>
 
                         <div class="grid grid-cols-2 gap-3">
                             <div class="flex flex-col gap-1.5">
-                                <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">Type</label>
+                                <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">
+                                    Type <span class="text-red-500">*</span>
+                                </label>
                                 <div class="relative">
                                     <select v-model="form.type"
-                                        :disabled="isLoading"
-                                        class="w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pr-8 pl-3 font-mono text-sm text-white/80 focus:border-emerald-500/40 focus:outline-none">
+                                        :disabled="isLoading" required
+                                        class="w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pr-8 pl-3 font-mono text-sm text-white/80 focus:border-emerald-500/40 focus:outline-none"
+                                        :class="{ 'border-red-500/50': errors.type }">
                                         <option v-for="t in walletTypes" :key="t.value" :value="t.value" class="bg-[#0d1117]">{{ t.label }}</option>
                                     </select>
                                     <ChevronDown class="pointer-events-none absolute top-1/2 right-2.5 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
                                 </div>
+                                <InputError :message="errors.type" />
                             </div>
                             <div class="flex flex-col gap-1.5">
-                                <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">Initial Balance (₱)</label>
+                                <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">
+                                    Initial Balance (₱) <span class="text-red-500">*</span>
+                                </label>
                                 <input v-model="form.balance" type="number" placeholder="0.00" min="0"
-                                    :disabled="isLoading"
-                                    class="rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-sm text-white/90 transition-all duration-200 placeholder:text-white/20 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none" />
+                                    :disabled="isLoading" required
+                                    class="rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-sm text-white/90 transition-all duration-200 placeholder:text-white/20 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none"
+                                    :class="{ 'border-red-500/50': errors.balance }" />
+                                <InputError :message="errors.balance" />
                             </div>
                         </div>
 
@@ -109,9 +149,12 @@ const walletTypes = [
                                 <div class="flex-1">
                                      <input v-model="form.icon" type="text" placeholder="Icon name (e.g. Wallet)"
                                         :disabled="isLoading"
-                                        class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-sm text-white/90 transition-all duration-200 placeholder:text-white/20 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none" />
+                                        class="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-sm text-white/90 transition-all duration-200 placeholder:text-white/20 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none"
+                                        :class="{ 'border-red-500/50': errors.icon }" />
                                 </div>
                             </div>
+                            <InputError :message="errors.icon" />
+                            <InputError :message="errors.color" />
                         </div>
                     </div>
 

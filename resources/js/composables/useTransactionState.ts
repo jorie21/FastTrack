@@ -122,15 +122,19 @@ export function useTransactionState() {
   function editTransaction(transaction: Transaction): void {
     isEditing.value = true
     currentUuid.value = transaction.uuid
-    
+
+    // Extract date from transaction_date (it might be ISO string or already YYYY-MM-DD)
+    const rawDate = (transaction as any).transaction_date || transaction.date || '';
+    const formattedDate = rawDate ? rawDate.split('T')[0] : '';
+
     form.value = {
       title: transaction.title || (transaction as any).description || '',
       amount: String(transaction.amount),
       type: transaction.type,
       category_id: (transaction as any).category_id || '',
       wallet_id: (transaction as any).wallet_id || '',
-      date: transaction.date || (transaction as any).transaction_date || '',
-      note: transaction.note || (transaction as any).description || '',
+      date: formattedDate,
+      note: transaction.note || '',
     }
     openModal()
   }
@@ -148,11 +152,12 @@ export function useTransactionState() {
       category_id: form.value.category_id,
       wallet_id: form.value.wallet_id,
       transaction_date: form.value.date,
+      note: form.value.note,
     }
 
     try {
       const response = await axios.put<Transaction>(`/transactions/${currentUuid.value}`, payload)
-      
+  // ... rest of code ...
       const index = transactions.value.findIndex((t) => t.uuid === currentUuid.value)
       if (index !== -1) {
         transactions.value[index] = response.data

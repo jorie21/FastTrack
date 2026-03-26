@@ -11,7 +11,7 @@ class UpdatetransanctionRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,13 @@ class UpdatetransanctionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'description' => 'sometimes|required|string|max:255',
+            'amount' => 'sometimes|required|numeric|min:0',
+            'type' => 'sometimes|required|in:income,expense',
+            'category_id' => 'sometimes|required|exists:categories,id',
+            'wallet_id' => 'sometimes|required|exists:wallets,id',
+            'transaction_date' => 'sometimes|required|date',
+            'note' => 'nullable|string',
         ];
     }
 }

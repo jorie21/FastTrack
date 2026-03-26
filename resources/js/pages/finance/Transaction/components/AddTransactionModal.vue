@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { X, ChevronDown, Loader2, Info } from 'lucide-vue-next';
-import { onMounted, computed, ref } from 'vue';
+import { onMounted, computed, ref, watch } from 'vue';
 import { useTransactionState } from '@/composables/useTransactionState';
 import { useWalletState } from '@/composables/useWalletState';
+import InputError from '@/components/InputError.vue';
 import type { Category } from '../types';
 
 defineProps<{
@@ -20,10 +21,19 @@ const {
 } = useTransactionState();
 
 const { wallets, fetchWallets } = useWalletState();
-const localError = ref<string | null>(null);
+const globalError = ref<string | null>(null);
+const errors = ref<Record<string, string>>({});
 
 onMounted(() => {
     fetchWallets();
+});
+
+// Clear errors when modal closes or opens
+watch(open, (val) => {
+    if (val) {
+        globalError.value = null;
+        errors.value = {};
+    }
 });
 
 const selectedWallet = computed(() => {
@@ -39,12 +49,13 @@ const formatCurrency = (amount: number) => {
 
 async function handleSave() {
     if (isLoading.value) return;
-    localError.value = null;
+    globalError.value = null;
+    errors.value = {};
 
-    // Frontend Validation
+    // Basic Frontend Validation (Optional, as backend will handle it, but good for UX)
     if (form.value.type === 'expense' && selectedWallet.value) {
         if (selectedWallet.value.name !== 'Cash' && Number(form.value.amount) > Number(selectedWallet.value.balance)) {
-            localError.value = "Not enough balance in this wallet.";
+            globalError.value = "Not enough balance in this wallet.";
             return;
         }
     }
@@ -56,7 +67,22 @@ async function handleSave() {
             await submit();
         }
     } catch (error: any) {
-        localError.value = error.response?.data?.message || error.message || "Failed to save transaction";
+        if (error.response?.status === 422) {
+            const backendErrors = error.response.data.errors;
+            // Map backend field names (description) to frontend field names (title)
+            if (backendErrors.description) {
+                errors.value.title = backendErrors.description[0];
+            }
+            // Map other fields
+            Object.keys(backendErrors).forEach(key => {
+                if (key !== 'description') {
+                    errors.value[key] = backendErrors[key][0];
+                }
+            });
+            globalError.value = "Please correct the errors below.";
+        } else {
+            globalError.value = error.response?.data?.message || error.message || "Failed to save transaction";
+        }
     }
 }
 </script>
@@ -108,51 +134,67 @@ async function handleSave() {
                     </div>
 
                     <!-- Error Alert -->
-                    <div v-if="localError" class="mb-4 flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/5 p-3.5 text-red-400">
+                    <div v-if="globalError" class="mb-4 flex items-start gap-2.5 rounded-xl border border-red-500/20 bg-red-500/5 p-3.5 text-red-400">
                         <Info class="h-4 w-4 shrink-0" />
-                        <p class="font-mono text-xs">{{ localError }}</p>
+                        <p class="font-mono text-xs">{{ globalError }}</p>
                     </div>
 
                     <!-- Fields -->
                     <div class="flex flex-col gap-4" :class="{ 'opacity-50 pointer-events-none': isLoading }">
                         <div class="flex flex-col gap-1.5">
-                            <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">Title</label>
+                            <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">
+                                Title <span class="text-red-500">*</span>
+                            </label>
                             <input v-model="form.title" type="text" placeholder="e.g. Monthly Salary"
-                                :disabled="isLoading"
-                                class="rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-sm text-white/90 transition-all duration-200 placeholder:text-white/20 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none" />
+                                :disabled="isLoading" required
+                                class="rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-sm text-white/90 transition-all duration-200 placeholder:text-white/20 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none" 
+                                :class="{ 'border-red-500/50': errors.title }" />
+                            <InputError :message="errors.title" />
                         </div>
 
                         <div class="flex flex-col gap-1.5">
-                            <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">Amount (₱)</label>
+                            <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">
+                                Amount (₱) <span class="text-red-500">*</span>
+                            </label>
                             <input v-model="form.amount" type="number" placeholder="0.00" min="0"
-                                :disabled="isLoading"
-                                class="rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-sm text-white/90 transition-all duration-200 placeholder:text-white/20 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none" />
+                                :disabled="isLoading" required
+                                class="rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-sm text-white/90 transition-all duration-200 placeholder:text-white/20 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none"
+                                :class="{ 'border-red-500/50': errors.amount }" />
+                            <InputError :message="errors.amount" />
                         </div>
 
                         <div class="grid grid-cols-2 gap-3">
                             <div class="flex flex-col gap-1.5">
-                                <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">Category</label>
+                                <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">
+                                    Category <span class="text-red-500">*</span>
+                                </label>
                                 <div class="relative">
                                     <select v-model="form.category_id"
-                                        :disabled="isLoading"
-                                        class="w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pr-8 pl-3 font-mono text-sm text-white/80 focus:border-emerald-500/40 focus:outline-none">
+                                        :disabled="isLoading" required
+                                        class="w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pr-8 pl-3 font-mono text-sm text-white/80 focus:border-emerald-500/40 focus:outline-none"
+                                        :class="{ 'border-red-500/50': errors.category_id }">
                                         <option value="" disabled class="bg-[#0d1117]">Select…</option>
                                         <option v-for="c in categories" :key="c.id" :value="c.id" class="bg-[#0d1117]">{{ c.name }}</option>
                                     </select>
                                     <ChevronDown class="pointer-events-none absolute top-1/2 right-2.5 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
                                 </div>
+                                <InputError :message="errors.category_id" />
                             </div>
                             <div class="flex flex-col gap-1.5">
-                                <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">Wallet</label>
+                                <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">
+                                    Wallet <span class="text-red-500">*</span>
+                                </label>
                                 <div class="relative">
                                     <select v-model="form.wallet_id"
-                                        :disabled="isLoading"
-                                        class="w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pr-8 pl-3 font-mono text-sm text-white/80 focus:border-emerald-500/40 focus:outline-none">
+                                        :disabled="isLoading" required
+                                        class="w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pr-8 pl-3 font-mono text-sm text-white/80 focus:border-emerald-500/40 focus:outline-none"
+                                        :class="{ 'border-red-500/50': errors.wallet_id }">
                                         <option value="" disabled class="bg-[#0d1117]">Select…</option>
                                         <option v-for="w in wallets" :key="w.id" :value="w.id" class="bg-[#0d1117]">{{ w.name }}</option>
                                     </select>
                                     <ChevronDown class="pointer-events-none absolute top-1/2 right-2.5 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
                                 </div>
+                                <InputError :message="errors.wallet_id" />
                             </div>
                         </div>
 
@@ -167,10 +209,14 @@ async function handleSave() {
                         </div>
 
                         <div class="flex flex-col gap-1.5">
-                            <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">Date</label>
+                            <label class="font-mono text-[11px] uppercase tracking-widest text-white/45">
+                                Date <span class="text-red-500">*</span>
+                            </label>
                             <input v-model="form.date" type="date"
-                                :disabled="isLoading"
-                                class="rounded-xl border border-white/10 bg-white/5 px-3 py-3 font-mono text-sm text-white/80 [color-scheme:dark] transition-all duration-200 focus:border-emerald-500/50 focus:outline-none" />
+                                :disabled="isLoading" required
+                                class="rounded-xl border border-white/10 bg-white/5 px-3 py-3 font-mono text-sm text-white/80 [color-scheme:dark] transition-all duration-200 focus:border-emerald-500/50 focus:outline-none"
+                                :class="{ 'border-red-500/50': errors.transaction_date }" />
+                            <InputError :message="errors.transaction_date" />
                         </div>
 
                         <div class="flex flex-col gap-1.5">
@@ -179,7 +225,9 @@ async function handleSave() {
                             </label>
                             <input v-model="form.note" type="text" placeholder="Add a note…"
                                 :disabled="isLoading"
-                                class="rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-sm text-white/90 transition-all duration-200 placeholder:text-white/20 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none" />
+                                class="rounded-xl border border-white/10 bg-white/5 px-4 py-3 font-mono text-sm text-white/90 transition-all duration-200 placeholder:text-white/20 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10 focus:outline-none"
+                                :class="{ 'border-red-500/50': errors.note }" />
+                            <InputError :message="errors.note" />
                         </div>
                     </div>
 

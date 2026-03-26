@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Repositories\WalletRepository;
+use App\Http\Requests\StoreWalletRequest;
+use App\Http\Requests\UpdateWalletRequest;
 use Illuminate\Http\Request;
 
 class WalletController extends Controller
@@ -19,12 +21,12 @@ class WalletController extends Controller
         return response()->json($this->repo->get($request));
     }
 
-    public function store(Request $request)
+    public function store(StoreWalletRequest $request)
     {
         return response()->json($this->repo->store($request));
     }
 
-    public function update(Request $request, $uuid)
+    public function update(UpdateWalletRequest $request, $uuid)
     {
         return response()->json($this->repo->update($request, $uuid));
     }
