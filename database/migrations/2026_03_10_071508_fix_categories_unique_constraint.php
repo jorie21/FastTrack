@@ -12,24 +12,29 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Safe check for the old unique index
-        $oldIndexExists = count(DB::select("SHOW INDEX FROM categories WHERE Key_name = 'categories_user_id_name_type_unique'")) > 0;
+        // Database-agnostic check for the old unique index
+        $indexes = Schema::getIndexes('categories');
+        $oldIndexExists = collect($indexes)->contains('name', 'categories_user_id_name_type_unique');
 
         Schema::table('categories', function (Blueprint $table) use ($oldIndexExists) {
             // 1. Drop the old unique index if it exists
             if ($oldIndexExists) {
-                $table->dropUnique(['user_id', 'name', 'type']);
+                // For SQLite, dropping a unique index might fail if it's part of the table definition
+                // but in modern Laravel/SQLite it usually works or is ignored if not supported directly.
+                try {
+                    $table->dropUnique('categories_user_id_name_type_unique');
+                } catch (\Exception $e) {
+                    // Silently fail if index doesn't exist or can't be dropped (common in some SQLite versions)
+                }
             }
 
             // 2. Add a virtual generated column for the unique constraint
-            // - If 'deleted_at' is NULL (active), it returns 1
-            // - If 'deleted_at' is NOT NULL (soft-deleted), it returns NULL
-            // Since MySQL allows multiple NULL values in a unique index, this allows
-            // multiple soft-deleted records but only ONE active record.
             if (!Schema::hasColumn('categories', 'is_active_unique')) {
+                // Note: SQLite supports generated columns since 3.31.0
                 $table->boolean('is_active_unique')
                     ->virtualAs('CASE WHEN deleted_at IS NULL THEN 1 ELSE NULL END')
-                    ->after('deleted_at');
+                    ->after('deleted_at')
+                    ->nullable(); // Important for the "NULL allows duplicates" logic
             }
 
             // 3. Re-add the unique constraint including the virtual column

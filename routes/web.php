@@ -12,7 +12,7 @@ Route::inertia('/', 'Welcome', [
     'canRegister' => Features::enabled(Features::registration()),
 ])->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'throttle:finance'])->group(function () {
     Route::inertia('dashboard', 'finance/Dashboard/Index')->name('dashboard');
     Route::get('/dashboard/stats', [DashboardController::class, 'stats']);
     Route::get('/dashboard/today', [DashboardController::class, 'todayStats']);

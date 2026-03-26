@@ -3,8 +3,21 @@ import { Plus, Trash2, Pencil } from 'lucide-vue-next';
 import { onMounted } from 'vue';
 import DynamicIcon from '@/components/DynamicIcon.vue';
 import { useCategoryState } from '@/composables/useCategoryState';
+import { useConfirm } from '@/composables/useConfirm';
 
 const { categories, fetchCategories, deleteCategory, editCategory, openModal } = useCategoryState();
+const { ask, close } = useConfirm();
+
+const handleDelete = (uuid: string) => {
+    ask({
+        title: 'Delete Category?',
+        message: 'Are you sure you want to delete this category? This action cannot be undone.',
+        onConfirm: async () => {
+            await deleteCategory(uuid);
+            close();
+        }
+    });
+};
 
 onMounted(() => {
     fetchCategories();
@@ -64,7 +77,7 @@ defineEmits<{
                 <div class="flex shrink-0 items-center gap-2">
                     <div class="h-3 w-3 rounded-full" :style="{ background: cat.color }" />
                     <button
-                        @click.stop="deleteCategory(cat.uuid)"
+                        @click.stop="handleDelete(cat.uuid)"
                         class="rounded-lg p-1.5 text-white/25 opacity-0 transition-all duration-200 group-hover:opacity-100 hover:bg-red-500/10 hover:text-red-400"
                     >
                         <Trash2 class="h-3.5 w-3.5" />

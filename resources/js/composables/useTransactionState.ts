@@ -1,8 +1,8 @@
 import axios from 'axios'
 import { ref } from 'vue'
 import type { Transaction } from '@/pages/finance/Transaction/types'
-import { useWalletState } from './useWalletState'
 import { useDashboardState } from './useDashboardState'
+import { useWalletState } from './useWalletState'
 
 export interface TransactionForm {
   title: string

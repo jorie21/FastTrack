@@ -2,12 +2,13 @@
 import {  Plus, Search } from 'lucide-vue-next';
 import { onMounted, ref } from 'vue';
 import AppContent from '@/components/AppContent.vue';
+import AlertError from '@/components/AlertError.vue';
 import { useWalletState } from '@/composables/useWalletState';
 import AppLayout from '@/layouts/AppLayout.vue';
 import AddWalletModal from './components/AddWalletModal.vue';
 import WalletList from './components/WalletList.vue';
 
-const { wallets, fetchWallets, openModal, isLoading } = useWalletState();
+const { wallets, fetchWallets, openModal, isLoading, errorMessage } = useWalletState();
 const searchQuery = ref('');
 
 onMounted(() => {
@@ -55,6 +56,9 @@ const handleSearch = () => {
                         />
                     </div>
                 </div>
+
+                <!-- Error Message -->
+                <AlertError v-if="errorMessage" :title="errorMessage" class="mb-4" />
 
                 <!-- Wallets Grid -->
                 <div v-if="isLoading && wallets.length === 0" class="flex h-64 items-center justify-center">

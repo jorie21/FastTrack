@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Wallet as WalletIcon, MoreVertical, Edit2, Trash2, Landmark, CreditCard, Banknote, LayoutGrid } from 'lucide-vue-next';
+import { Wallet as WalletIcon, Edit2, Trash2, Landmark, CreditCard, Banknote, LayoutGrid } from 'lucide-vue-next';
+import { useConfirm } from '@/composables/useConfirm';
 import { useWalletState } from '@/composables/useWalletState';
 import type { Wallet } from '../types';
 
@@ -8,6 +9,18 @@ defineProps<{
 }>();
 
 const { editWallet, deleteWallet } = useWalletState();
+const { ask, close } = useConfirm();
+
+const handleDelete = (uuid: string) => {
+    ask({
+        title: 'Delete Wallet?',
+        message: 'Are you sure you want to delete this wallet? This action cannot be undone.',
+        onConfirm: async () => {
+            await deleteWallet(uuid);
+            close();
+        }
+    });
+};
 
 function getIcon(type: string) {
     switch (type) {
@@ -50,7 +63,7 @@ function formatCurrency(amount: number) {
                         <Edit2 class="h-4 w-4" />
                     </button>
                     <button 
-                        @click="deleteWallet(wallet.uuid)"
+                        @click="handleDelete(wallet.uuid)"
                         class="rounded-lg p-2 text-white/40 transition-colors hover:bg-white/5 hover:text-red-400"
                     >
                         <Trash2 class="h-4 w-4" />

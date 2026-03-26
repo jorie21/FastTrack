@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { ref } from 'vue'
 import type { Category } from '@/pages/finance/Transaction/types'
+import { useErrorState } from './useErrorState'
 
 export interface CategoryForm {
   name: string
@@ -24,6 +25,8 @@ const form = ref<CategoryForm>({
 })
 
 export function useCategoryState() {
+  const { openErrorModal, closeErrorModal, showErrorModal, deleteErrorMessage } = useErrorState();
+
   // --- Modal state ---
   
   const openModal = () => { open.value = true }
@@ -77,15 +80,17 @@ export function useCategoryState() {
 
   // --- 3. DELETE ---
   async function deleteCategory(uuid: string): Promise<void> {
-    // Remove from UI immediately (Optimistic)
-    const original = [...categories.value]
-    categories.value = categories.value.filter((c) => c.uuid !== uuid)
+    isLoading.value = true
 
     try {
       await axios.delete(`/categories/${uuid}`)
-    } catch (error) {
-      categories.value = original
-      console.error('Failed to delete:', error)
+      categories.value = categories.value.filter((c) => c.uuid !== uuid)
+    } catch (error: any) {
+      const msg = error.response?.data?.message || 'Failed to delete category'
+      openErrorModal(msg)
+      console.error('Failed to delete category:', error)
+    } finally {
+      isLoading.value = false
     }
   }
 
@@ -127,8 +132,11 @@ export function useCategoryState() {
     categories,
     isLoading,
     isEditing,
+    showErrorModal,
+    deleteErrorMessage,
     openModal,
     closeModal,
+    closeErrorModal,
     resetForm,
     submit,
     fetchCategories,

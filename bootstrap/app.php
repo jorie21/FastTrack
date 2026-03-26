@@ -20,7 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            'throttle:global',
         ]);
+
+        $middleware->throttleApi('global');
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

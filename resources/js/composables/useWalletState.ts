@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { ref } from 'vue'
 import type { Wallet, WalletForm } from '@/pages/finance/Wallet/types'
+import { useErrorState } from './useErrorState'
 
 // --- GLOBAL STATE (SHARED) ---
 const wallets = ref<Wallet[]>([])
@@ -8,6 +9,7 @@ const isLoading = ref(false)
 const isEditing = ref(false)
 const currentUuid = ref<string | null>(null)
 const open = ref(false)
+const errorMessage = ref<string | null>(null)
 
 const form = ref<WalletForm>({
     name: '',
@@ -19,12 +21,18 @@ const form = ref<WalletForm>({
 })
 
 export function useWalletState() {
-    const openModal = () => { open.value = true }
+    const { openErrorModal, closeErrorModal, showErrorModal, deleteErrorMessage } = useErrorState();
+
+    const openModal = () => { 
+        errorMessage.value = null
+        open.value = true 
+    }
     
     const closeModal = () => { 
         open.value = false
         isEditing.value = false
         currentUuid.value = null
+        errorMessage.value = null
         resetForm()
     }
 
@@ -57,13 +65,15 @@ export function useWalletState() {
         if (!form.value.name || !form.value.type) return
 
         isLoading.value = true
+        errorMessage.value = null
         const payload = { ...form.value, balance: Number(form.value.balance) }
 
         try {
             const response = await axios.post<Wallet>('/wallets', payload)
             wallets.value.unshift(response.data)
             closeModal()
-        } catch (error) {
+        } catch (error: any) {
+            errorMessage.value = error.response?.data?.message || 'Failed to save wallet'
             console.error('Failed to save wallet:', error)
         } finally {
             isLoading.value = false
@@ -72,14 +82,18 @@ export function useWalletState() {
 
     // --- 3. DELETE ---
     async function deleteWallet(uuid: string): Promise<void> {
-        const original = [...wallets.value]
-        wallets.value = wallets.value.filter((w) => w.uuid !== uuid)
+        errorMessage.value = null
+        isLoading.value = true
 
         try {
             await axios.delete(`/wallets/${uuid}`)
-        } catch (error) {
-            wallets.value = original
+            wallets.value = wallets.value.filter((w) => w.uuid !== uuid)
+        } catch (error: any) {
+            const msg = error.response?.data?.message || 'Failed to delete wallet'
+            openErrorModal(msg)
             console.error('Failed to delete wallet:', error)
+        } finally {
+            isLoading.value = false
         }
     }
 
@@ -87,6 +101,7 @@ export function useWalletState() {
     function editWallet(wallet: Wallet): void {
         isEditing.value = true
         currentUuid.value = wallet.uuid
+        errorMessage.value = null
         
         form.value = {
             name: wallet.name,
@@ -104,6 +119,7 @@ export function useWalletState() {
         if (!currentUuid.value || !form.value.name) return
 
         isLoading.value = true
+        errorMessage.value = null
         const payload = { ...form.value, balance: Number(form.value.balance) }
 
         try {
@@ -113,7 +129,8 @@ export function useWalletState() {
                 wallets.value[index] = response.data
             }
             closeModal()
-        } catch (error) {
+        } catch (error: any) {
+            errorMessage.value = error.response?.data?.message || 'Failed to update wallet'
             console.error('Failed to update wallet:', error)
         } finally {
             isLoading.value = false
@@ -126,8 +143,12 @@ export function useWalletState() {
         wallets,
         isLoading,
         isEditing,
+        errorMessage,
+        showErrorModal,
+        deleteErrorMessage,
         openModal,
         closeModal,
+        closeErrorModal,
         resetForm,
         submit,
         fetchWallets,

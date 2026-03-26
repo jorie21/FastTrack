@@ -49,7 +49,12 @@ Class CategoryRepository
 
             $category = Category::where('uuid', $uuid)
                 ->where('user_id', $request->user()->id)
+                ->withCount('transactions')
                 ->firstOrFail();
+
+            if ($category->transactions_count > 0) {
+                throw new Exception("Cannot delete category because it is used in {$category->transactions_count} transactions.");
+            }
 
             $category->delete();
 

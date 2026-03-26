@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { X, ChevronDown, Loader2, Wallet as WalletIcon } from 'lucide-vue-next';
 import { useWalletState } from '@/composables/useWalletState';
+import AlertError from '@/components/AlertError.vue';
 
 const { 
     form, 
@@ -8,6 +9,7 @@ const {
     closeModal, 
     isEditing, 
     isLoading,
+    errorMessage,
     submit, 
     updateWallet 
 } = useWalletState();
@@ -62,6 +64,9 @@ const walletTypes = [
                             <X class="h-4 w-4" />
                         </button>
                     </div>
+
+                    <!-- Error Message -->
+                    <AlertError v-if="errorMessage" :title="errorMessage" class="mb-4" />
 
                     <!-- Fields -->
                     <div class="flex flex-col gap-4" :class="{ 'opacity-50 pointer-events-none': isLoading }">

@@ -53,6 +53,10 @@ class WalletRepository
                 ->where('user_id', $request->user()->id)
                 ->firstOrFail();
 
+            if ($wallet->transactions()->exists()) {
+                abort(400, "This {$this->title} cannot be deleted because it is associated with one or more transactions.");
+            }
+
             $wallet->delete();
 
             DB::commit();

@@ -137,7 +137,7 @@ async function handleSave() {
                                         :disabled="isLoading"
                                         class="w-full cursor-pointer appearance-none rounded-xl border border-white/10 bg-white/5 py-3 pr-8 pl-3 font-mono text-sm text-white/80 focus:border-emerald-500/40 focus:outline-none">
                                         <option value="" disabled class="bg-[#0d1117]">Select…</option>
-                                        <option v-for="c in categories" :key="c.id" :value="c.id" class="bg-[#0d1117]">{{ c.icon }} {{ c.name }}</option>
+                                        <option v-for="c in categories" :key="c.id" :value="c.id" class="bg-[#0d1117]">{{ c.name }}</option>
                                     </select>
                                     <ChevronDown class="pointer-events-none absolute top-1/2 right-2.5 h-3.5 w-3.5 -translate-y-1/2 text-white/30" />
                                 </div>
