@@ -1,30 +1,34 @@
 # Gemini Project Context: FastTrack
 
 ## Project Overview
-FastTrack is a modern financial tracking application built with **Laravel 12.0** and **Vue 3** (via **Inertia.js**). It provides a robust backend with a clean architecture and a polished, responsive frontend using **Tailwind CSS 4**.
+FastTrack is a modern financial tracking application built with **Laravel 13.0** and **Vue 3** (via **Inertia.js**). It provides a robust backend with a clean architecture and a polished, responsive frontend using **Tailwind CSS 4**.
 
 ### Key Technologies
-- **Backend:** Laravel 12.0 (PHP 8.2+), Fortify (Authentication), Sanctum (API), Wayfinder.
+- **Backend:** Laravel 13.0 (PHP 8.3+), Fortify (Authentication), Sanctum (API), Wayfinder.
 - **Frontend:** Vue 3 (Composition API), TypeScript, Inertia.js, Vite, Tailwind CSS 4, Lucide Icons.
 - **Database:** SQLite (Default), supporting MySQL/PostgreSQL.
 - **Testing:** Pest PHP (Backend), Prettier & ESLint (Frontend).
 
 ## Architectural Patterns
-The project follows a structured approach to ensure maintainability:
+The project follows a structured approach to ensure maintainability and follow DRY principles:
 
 ### 1. Models & Query Builders
 - **Location:** Models in `app/Models/`, Custom Builders in `app/Services/QueryBuilders/`.
 - **Pattern:** Models override `newEloquentBuilder` to return a specialized Query Builder class. This isolates complex query logic from the model.
 
-### 2. Repositories
+### 2. Repositories (Base Repository Pattern)
 - **Location:** `app/Repositories/`.
-- **Pattern:** Encapsulates data access and business logic (e.g., `TransactionRepository` handles complex creation/retrieval). Controllers delegate to repositories to remain "thin."
+- **Pattern:** Uses a `BaseRepository` to encapsulate common CRUD operations (store, update, delete, findByUuid) within database transactions. Specific repositories extend this base to add domain-specific logic (e.g., `TransactionRepository` handling wallet balance adjustments).
 
-### 3. Validation & Authorization
+### 3. Controllers (Laravel 13 Style)
+- **Location:** `app/Http/Controllers/`.
+- **Pattern:** Controllers are kept "thin" by delegating business logic to repositories. They utilize modern PHP features like **Constructor Property Promotion** and strict type hinting. Responses are standardized using `JsonResponse`.
+
+### 4. Validation & Authorization
 - **Requests:** Custom form requests in `app/Http/Requests/` handle validation.
 - **Policies:** Located in `app/Policies/` for model-level authorization.
 
-### 4. Frontend Bridge (Inertia)
+### 5. Frontend Bridge (Inertia)
 - **Middleware:** `HandleInertiaRequests` bridges backend data to Vue components.
 - **Components:** Vue pages in `resources/js/pages/`, reusable components in `resources/js/components/`.
 
@@ -68,6 +72,6 @@ php artisan migrate --force # Runs migrations in production
 
 ## Conventions
 - **Naming:** Follow PSR-12 for PHP and standard Vue/TypeScript conventions.
-- **Type Safety:** Use TypeScript for all frontend components and composables.
+- **Type Safety:** Use TypeScript for all frontend components and composables. Use strict PHP type hinting in the backend.
 - **Testing:** New features MUST include Pest feature tests in `tests/Feature/`.
 - **Commits:** Prefer clear, concise commit messages following standard Git practices.

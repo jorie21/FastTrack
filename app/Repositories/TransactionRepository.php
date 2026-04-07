@@ -5,152 +5,63 @@ namespace App\Repositories;
 use App\Models\Transaction;
 use App\Models\Wallet;
 use Exception;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class TransactionRepository
+class TransactionRepository extends BaseRepository
 {
-    private $title = "transaction";
+    protected string $model = Transaction::class;
+    protected string $title = 'transaction';
 
-    public function store($request)
+    protected function applyFilters(Request $request): Builder
     {
-        $user = $request->user();
+        return $this->query()->filterTransactionByRequest($request)->sort();
+    }
 
-        try {
-            DB::beginTransaction();
-
+    public function store(Request $request, array $extraData = [])
+    {
+        return DB::transaction(function () use ($request) {
+            $user = $request->user();
             $data = [
                 'uuid' => Str::uuid()->toString(),
-                'user_id' => $request->user_id ?? $user->id,
-                'category_id' => $request->category_id ?? null,
-                'wallet_id' => $request->wallet_id ?? null,
+                'user_id' => $user->id,
+                'category_id' => $request->category_id,
+                'wallet_id' => $request->wallet_id,
                 'transaction_date' => $request->transaction_date ?? now(),
                 'amount' => $request->amount ?? 0,
-                'description' => $request->description ?? null,
+                'description' => $request->description,
                 'type' => $request->type ?? 'expense',
             ];
 
-            // --- Wallet Balance Logic ---
             if ($data['wallet_id']) {
-                $wallet = Wallet::where('id', $data['wallet_id'])
-                    ->where('user_id', $user->id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
-
-                if ($data['type'] === 'income') {
-                    $wallet->balance += $data['amount'];
-                } else {
-                    // Expense Validation
-                    if ($wallet->name !== 'Cash' && $data['amount'] > $wallet->balance) {
-                        throw new Exception("Not enough balance in this wallet.");
-                    }
-                    $wallet->balance -= $data['amount'];
-                }
-                $wallet->save();
+                $this->updateWalletBalance($data['wallet_id'], $user->id, $data['amount'], $data['type'], 'apply');
             }
 
-            $transaction = Transaction::create($data);
-
-            DB::commit();
-
-            return $transaction;
-
-        } catch (Exception $e) {
-            DB::rollBack();
-            throw new Exception($e->getMessage());
-        }
+            return Transaction::create($data);
+        });
     }
 
-    public function get($request)
+    public function update(Request $request, string $uuid)
     {
-        return Transaction::query()->filterTransactionByRequest($request)->sort()->get();
-    }
+        return DB::transaction(function () use ($request, $uuid) {
+            $user = $request->user();
+            $transaction = $this->findByUuid($uuid, $user->id);
 
-    public function delete($request, $uuid)
-    {
-        try {
-            DB::beginTransaction();
-
-            $transaction = Transaction::where('uuid', $uuid)
-                ->where('user_id', $request->user()->id)
-                ->firstOrFail();
-
-            // Reverse wallet balance impact
+            // Reverse old balance
             if ($transaction->wallet_id) {
-                $wallet = Wallet::where('id', $transaction->wallet_id)
-                    ->where('user_id', $request->user()->id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
-
-                if ($transaction->type === 'income') {
-                    $wallet->balance -= $transaction->amount;
-                } else {
-                    $wallet->balance += $transaction->amount;
-                }
-                $wallet->save();
+                $this->updateWalletBalance($transaction->wallet_id, $user->id, $transaction->amount, $transaction->type, 'reverse');
             }
 
-            $transaction->delete();
+            $newAmount = $request->amount ?? $transaction->amount;
+            $newType = $request->type ?? $transaction->type;
+            $newWalletId = $request->wallet_id ?? $transaction->wallet_id;
 
-            DB::commit();
-
-            return ['message' => "{$this->title} deleted successfully"];
-
-        } catch (Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    }
-
-    public function update($request, $uuid)
-    {
-        try {
-            DB::beginTransaction();
-
-            $transaction = Transaction::where('uuid', $uuid)
-                ->where('user_id', $request->user()->id)
-                ->firstOrFail();
-
-            $oldAmount = $transaction->amount;
-            $oldType = $transaction->type;
-            $oldWalletId = $transaction->wallet_id;
-
-            $newAmount = $request->amount ?? $oldAmount;
-            $newType = $request->type ?? $oldType;
-            $newWalletId = $request->wallet_id ?? $oldWalletId;
-
-            // Reverse old impact
-            if ($oldWalletId) {
-                $oldWallet = Wallet::where('id', $oldWalletId)
-                    ->where('user_id', $request->user()->id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
-
-                if ($oldType === 'income') {
-                    $oldWallet->balance -= $oldAmount;
-                } else {
-                    $oldWallet->balance += $oldAmount;
-                }
-                $oldWallet->save();
-            }
-
-            // Apply new impact
+            // Apply new balance
             if ($newWalletId) {
-                $newWallet = ($newWalletId == $oldWalletId) ? $oldWallet : Wallet::where('id', $newWalletId)
-                    ->where('user_id', $request->user()->id)
-                    ->lockForUpdate()
-                    ->firstOrFail();
-
-                if ($newType === 'income') {
-                    $newWallet->balance += $newAmount;
-                } else {
-                    // Validation for expense
-                    if ($newWallet->name !== 'Cash' && $newAmount > $newWallet->balance) {
-                        throw new Exception("Not enough balance in this wallet.");
-                    }
-                    $newWallet->balance -= $newAmount;
-                }
-                $newWallet->save();
+                $this->updateWalletBalance($newWalletId, $user->id, $newAmount, $newType, 'apply');
             }
 
             $transaction->update([
@@ -162,13 +73,43 @@ class TransactionRepository
                 'type' => $newType,
             ]);
 
-            DB::commit();
-
             return $transaction;
+        });
+    }
 
-        } catch (Exception $e) {
-            DB::rollBack();
-            throw new Exception($e->getMessage());
+    public function delete(Request $request, string $uuid)
+    {
+        return DB::transaction(function () use ($request, $uuid) {
+            $user = $request->user();
+            $transaction = $this->findByUuid($uuid, $user->id);
+
+            if ($transaction->wallet_id) {
+                $this->updateWalletBalance($transaction->wallet_id, $user->id, $transaction->amount, $transaction->type, 'reverse');
+            }
+
+            $transaction->delete();
+
+            return ['message' => "{$this->title} deleted successfully"];
+        });
+    }
+
+    private function updateWalletBalance(int $walletId, int $userId, float $amount, string $type, string $action): void
+    {
+        $wallet = Wallet::where('id', $walletId)
+            ->where('user_id', $userId)
+            ->lockForUpdate()
+            ->firstOrFail();
+
+        $isIncome = $type === 'income';
+        $isApply = $action === 'apply';
+        
+        $adjustment = $isIncome === $isApply ? $amount : -$amount;
+
+        if (!$isIncome && $isApply && $wallet->name !== 'Cash' && $amount > $wallet->balance) {
+            throw new Exception("Not enough balance in this wallet.");
         }
+
+        $wallet->balance += $adjustment;
+        $wallet->save();
     }
 }

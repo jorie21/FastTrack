@@ -4,94 +4,46 @@ namespace App\Repositories;
 
 use App\Models\Category;
 use Exception;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 
-Class CategoryRepository
+class CategoryRepository extends BaseRepository
 {
-    private $title = 'category';
+    protected string $model = Category::class;
+    protected string $title = 'category';
 
-    public function store($request)
+    protected function applyFilters(Request $request): Builder
     {
-        try {
-            DB::beginTransaction();
+        return $this->query()->filterCategoryByRequest($request)->sort();
+    }
 
-            $data = [
-                'uuid' => Str::uuid()->toString(),
-                'name' => $request->name ?? null,
-                'icon' => $request->icon ?? null,
-                'color' => $request->color ?? null,
-                'type' => $request->type ?? 'expense',
-                'user_id' => $request->user()->id ?? null,
-            ];
+    protected function mapStorageData(Request $request): array
+    {
+        return [
+            'name' => $request->name,
+            'icon' => $request->icon,
+            'color' => $request->color,
+            'type' => $request->type ?? 'expense',
+        ];
+    }
 
-            $category = Category::create($data);
+    protected function mapUpdateData(Request $request, Model $model): array
+    {
+        return [
+            'name' => $request->name ?? $model->name,
+            'icon' => $request->icon ?? $model->icon,
+            'color' => $request->color ?? $model->color,
+            'type' => $request->type ?? $model->type,
+        ];
+    }
 
-            DB::commit();
+    protected function beforeDelete(Model $model): void
+    {
+        $model->loadCount('transactions');
 
-            return $category;
-
-        } catch (Exception $e) {
-            DB::rollBack();
-            throw $e;
+        if ($model->transactions_count > 0) {
+            throw new Exception("Cannot delete category because it is used in {$model->transactions_count} transactions.");
         }
     }
-
-    public function get($request)
-    {
-        return Category::query()->filterCategoryByRequest($request)->sort()->get();
-    }
-
-    public function delete($request, $uuid)
-    {
-        try {
-            DB::beginTransaction();
-
-            $category = Category::where('uuid', $uuid)
-                ->where('user_id', $request->user()->id)
-                ->withCount('transactions')
-                ->firstOrFail();
-
-            if ($category->transactions_count > 0) {
-                throw new Exception("Cannot delete category because it is used in {$category->transactions_count} transactions.");
-            }
-
-            $category->delete();
-
-            DB::commit();
-
-            return ['message' => "{$this->title} deleted successfully"];
-
-        } catch (Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    }
-
-    public function update($request, $uuid)
-    {
-        try {
-            DB::beginTransaction();
-
-            $category = Category::where('uuid', $uuid)
-                ->where('user_id', $request->user()->id)
-                ->firstOrFail();
-
-            $category->update([
-                'name' => $request->name ?? $category->name,
-                'icon' => $request->icon ?? $category->icon,
-                'color' => $request->color ?? $category->color,
-                'type' => $request->type ?? $category->type,
-            ]);
-
-            DB::commit();
-
-            return $category;
-
-        } catch (Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    }
-    
 }

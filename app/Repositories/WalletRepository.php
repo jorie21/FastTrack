@@ -3,97 +3,48 @@
 namespace App\Repositories;
 
 use App\Models\Wallet;
-use Exception;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 
-class WalletRepository
+class WalletRepository extends BaseRepository
 {
-    private $title = 'wallet';
+    protected string $model = Wallet::class;
+    protected string $title = 'wallet';
 
-    public function store($request)
+    protected function applyFilters(Request $request): Builder
     {
-        try {
-            DB::beginTransaction();
-
-            $data = [
-                'uuid' => Str::uuid()->toString(),
-                'user_id' => $request->user()->id,
-                'name' => $request->name,
-                'type' => $request->type,
-                'balance' => $request->balance ?? 0,
-                'icon' => $request->icon ?? null,
-                'color' => $request->color ?? null,
-                'is_active' => $request->is_active ?? true,
-            ];
-
-            $wallet = Wallet::create($data);
-
-            DB::commit();
-
-            return $wallet;
-
-        } catch (Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
+        return $this->query()->filterByRequest($request)->sort();
     }
 
-    public function get($request)
+    protected function mapStorageData(Request $request): array
     {
-        return Wallet::query()->filterByRequest($request)->sort()->get();
+        return [
+            'name' => $request->name,
+            'type' => $request->type,
+            'balance' => $request->balance ?? 0,
+            'icon' => $request->icon ?? null,
+            'color' => $request->color ?? null,
+            'is_active' => $request->is_active ?? true,
+        ];
     }
 
-    public function delete($request, $uuid)
+    protected function mapUpdateData(Request $request, Model $model): array
     {
-        try {
-            DB::beginTransaction();
-
-            $wallet = Wallet::where('uuid', $uuid)
-                ->where('user_id', $request->user()->id)
-                ->firstOrFail();
-
-            if ($wallet->transactions()->exists()) {
-                abort(400, "This {$this->title} cannot be deleted because it is associated with one or more transactions.");
-            }
-
-            $wallet->delete();
-
-            DB::commit();
-
-            return ['message' => "{$this->title} deleted successfully"];
-
-        } catch (Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
+        return [
+            'name' => $request->name ?? $model->name,
+            'type' => $request->type ?? $model->type,
+            'balance' => $request->balance ?? $model->balance,
+            'icon' => $request->icon ?? $model->icon,
+            'color' => $request->color ?? $model->color,
+            'is_active' => $request->is_active ?? $model->is_active,
+        ];
     }
 
-    public function update($request, $uuid)
+    protected function beforeDelete(Model $model): void
     {
-        try {
-            DB::beginTransaction();
-
-            $wallet = Wallet::where('uuid', $uuid)
-                ->where('user_id', $request->user()->id)
-                ->firstOrFail();
-
-            $wallet->update([
-                'name' => $request->name ?? $wallet->name,
-                'type' => $request->type ?? $wallet->type,
-                'balance' => $request->balance ?? $wallet->balance,
-                'icon' => $request->icon ?? $wallet->icon,
-                'color' => $request->color ?? $wallet->color,
-                'is_active' => $request->is_active ?? $wallet->is_active,
-            ]);
-
-            DB::commit();
-
-            return $wallet;
-
-        } catch (Exception $e) {
-            DB::rollBack();
-            throw $e;
+        if ($model->transactions()->exists()) {
+            abort(400, "This {$this->title} cannot be deleted because it is associated with one or more transactions.");
         }
     }
 }
